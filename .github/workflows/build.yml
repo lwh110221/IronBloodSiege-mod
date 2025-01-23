@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -27,32 +30,34 @@ jobs:
       run: |
         msbuild /p:Configuration=Release /p:Platform=AnyCPU
         
+    - name: Debug Output
+      run: |
+        echo "Listing directory contents:"
+        dir
+        echo "Listing bin directory contents:"
+        dir bin
+        echo "Listing Release directory contents:"
+        dir bin\Release
+        
     - name: Create Mod Structure
       run: |
-        mkdir -p IronBloodSiege/bin/Win64_Shipping_Client
-        # 显示构建输出目录内容
-        dir bin\Release
+        mkdir -p IronBloodSiege\bin\Win64_Shipping_Client
         # 复制DLL文件
-        copy bin\Release\IronBloodSiege.dll IronBloodSiege\bin\Win64_Shipping_Client\
-        copy SubModule.xml IronBloodSiege\
+        copy "bin\Release\IronBloodSiege.dll" "IronBloodSiege\bin\Win64_Shipping_Client\"
+        copy "SubModule.xml" "IronBloodSiege\"
         
     - name: Create Release ZIP
       run: |
         Compress-Archive -Path IronBloodSiege -DestinationPath IronBloodSiege.zip -Force
       
-    - name: Get Version
-      id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-      shell: bash
-        
     - name: Create Release
-      id: create_release
       uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: IronBloodSiege.zip
-        name: 铁血攻城 ${{ env.VERSION }}
+        name: 铁血攻城 ${{ github.ref_name }}
         body: |
-          铁血攻城 Mod ${{ env.VERSION }}
+          铁血攻城 Mod ${{ github.ref_name }}
           
           ## 更新内容
           - 自动构建发布

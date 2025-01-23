@@ -1,9 +1,28 @@
+# 编译输出目录
 bin/
 obj/
-.vs/
-.vscode/
-bin\
-obj\
-vs\
-vscode\
 
+# Visual Studio 文件
+.vs/
+*.user
+*.suo
+*.cache
+*.pdb
+*.dll
+
+# 游戏引用DLL文件夹
+src/*.dll
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+# Windows系统文件
+Thumbs.db
+Desktop.ini
+
+# 日志文件
+*.log

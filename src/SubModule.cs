@@ -72,7 +72,7 @@ namespace IronBloodSiege
         private const float MORALE_UPDATE_INTERVAL = 0.5f;
         private float _lastMoraleUpdateTime = 0f;
         private float _lastMessageTime = 0f;
-        private const float MESSAGE_COOLDOWN = 10f; // 消息冷却时间10秒
+        private const float MESSAGE_COOLDOWN = 10f;
 
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
 
@@ -164,7 +164,7 @@ namespace IronBloodSiege
                 agent.SetMorale(targetMorale);
 
                 // 只在士气显著提升时才计数
-                if (oldMorale < moraleThreshold * 0.7f) // 更严格的条件
+                if (oldMorale < moraleThreshold * 0.7f) 
                 {
                     boostedCount++;
                     hasMoraleBoosted = true;

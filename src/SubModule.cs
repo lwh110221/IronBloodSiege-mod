@@ -172,21 +172,30 @@ namespace IronBloodSiege
 
             _lastMoraleUpdateTime = Mission.Current.CurrentTime;
             
-            // 只在士气低于90或正在逃跑时更新
+            // 检查需要更新的士兵
             var agentsToUpdate = team.ActiveAgents.Where(agent => 
                 agent?.IsHuman == true && 
                 !agent.IsPlayerControlled && 
                 agent.IsActive() && 
-                (agent.GetMorale() < 90f || agent.IsRetreating()));
+                (agent.GetMorale() < 80f || agent.IsRetreating()));
 
+            bool hasMoraleBoosted = false;
             foreach (Agent agent in agentsToUpdate)
             {
+                float oldMorale = agent.GetMorale();
                 agent.SetMorale(100f);
                 _agentMoraleHistory[agent] = 100f;
+
+                // 如果士气显著提升，标记为已鼓舞
+                if (oldMorale < 50f)
+                {
+                    hasMoraleBoosted = true;
+                }
 
                 if (agent.IsRetreating())
                 {
                     agent.StopRetreating();
+                    hasMoraleBoosted = true;
                     
                     // 只在士兵实际逃跑时设置Formation
                     if (agent.Formation != null && !_chargedFormations.Contains(agent.Formation))
@@ -194,6 +203,14 @@ namespace IronBloodSiege
                         PreventRetreat(agent.Formation);
                     }
                 }
+            }
+
+            // 如果有士兵被鼓舞，显示消息
+            if (hasMoraleBoosted)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "铁血攻城：已鼓舞士兵",
+                    Color.FromUint(0xFFFF00FF)));  // 使用黄色
             }
         }
 

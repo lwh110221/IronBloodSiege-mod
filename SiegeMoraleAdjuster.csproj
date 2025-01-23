@@ -40,37 +40,37 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
     <Reference Include="TaleWorlds.CampaignSystem">
-      <HintPath>src\TaleWorlds.CampaignSystem.dll</HintPath>
+      <HintPath>lib\TaleWorlds.CampaignSystem.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="TaleWorlds.Core">
-      <HintPath>src\TaleWorlds.Core.dll</HintPath>
+      <HintPath>lib\TaleWorlds.Core.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="TaleWorlds.DotNet">
-      <HintPath>src\TaleWorlds.DotNet.dll</HintPath>
+      <HintPath>lib\TaleWorlds.DotNet.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="TaleWorlds.Library">
-      <HintPath>src\TaleWorlds.Library.dll</HintPath>
+      <HintPath>lib\TaleWorlds.Library.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="TaleWorlds.MountAndBlade">
-      <HintPath>src\TaleWorlds.MountAndBlade.dll</HintPath>
+      <HintPath>lib\TaleWorlds.MountAndBlade.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="TaleWorlds.Engine">
-      <HintPath>src\TaleWorlds.Engine.dll</HintPath>
+      <HintPath>lib\TaleWorlds.Engine.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
     <Reference Include="MCM">
-      <HintPath>src\MCMv5.dll</HintPath>
+      <HintPath>lib\MCMv5.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

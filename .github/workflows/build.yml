@@ -1,0 +1,64 @@
+name: Build and Release Mod
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '6.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: |
+        msbuild /p:Configuration=Release /p:Platform=x64
+        
+    - name: Create Mod Structure
+      run: |
+        mkdir -p IronBloodSiege/bin/Win64_Shipping_Client
+        copy bin/x64/Release/IronBloodSiege.dll IronBloodSiege/bin/Win64_Shipping_Client/
+        copy SubModule.xml IronBloodSiege/
+        
+    - name: Create Release ZIP
+      run: |
+        Compress-Archive -Path IronBloodSiege -DestinationPath IronBloodSiege.zip
+      
+    - name: Get Version
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      shell: bash
+        
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: IronBloodSiege.zip
+        name: 铁血攻城 ${{ env.VERSION }}
+        body: |
+          铁血攻城 Mod ${{ env.VERSION }}
+          
+          ## 更新内容
+          - 自动构建发布
+          
+          ## 安装说明
+          1. 下载 IronBloodSiege.zip
+          2. 解压到游戏的 Modules 目录
+          3. 启动游戏，在启动器中启用该 Mod
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

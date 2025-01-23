@@ -10,7 +10,7 @@
         <DependedModule Id="SandBoxCore" DependentVersion="v1.2.12"/>
         <DependedModule Id="Sandbox" DependentVersion="v1.2.12"/>
         <DependedModule Id="StoryMode" DependentVersion="v1.2.12"/>
-        <DependedModule Id="Bannerlord.MBOptionScreen" DependentVersion="v5.10.0"/>
+        <DependedModule Id="Bannerlord.MBOptionScreen" DependentVersion="v5.10.1"/>
     </DependedModules>
     <SubModules>
         <SubModule>

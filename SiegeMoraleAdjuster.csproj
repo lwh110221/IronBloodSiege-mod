@@ -59,6 +59,11 @@
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
+    <Reference Include="TaleWorlds.Localization">
+      <HintPath>lib\TaleWorlds.Localization.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="TaleWorlds.MountAndBlade">
       <HintPath>lib\TaleWorlds.MountAndBlade.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>

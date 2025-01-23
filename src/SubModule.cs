@@ -1,3 +1,7 @@
+// 铁血攻城
+// 作者：Ahao
+// 版本：1.0.0
+// email ：2285813721@qq.com
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
@@ -14,7 +18,32 @@ namespace IronBloodSiege
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-            InformationManager.DisplayMessage(new InformationMessage("铁血攻城已加载", Color.FromUint(0x00FF00FF)));
+        }
+
+        public override void OnInitialState()
+        {
+            base.OnInitialState();
+            ShowModInfo();
+        }
+
+        public override void OnGameInitializationFinished(Game game)
+        {
+            base.OnGameInitializationFinished(game);
+            ShowModInfo();
+        }
+
+        private void ShowModInfo()
+        {
+            try
+            {
+                InformationManager.DisplayMessage(new InformationMessage("铁血攻城 -加载成功！", Color.FromUint(0x0000FFFF)));
+                InformationManager.DisplayMessage(new InformationMessage("作者 ：Ahao", Color.FromUint(0x0000FFFF)));
+                InformationManager.DisplayMessage(new InformationMessage("email ：2285813721@qq.com", Color.FromUint(0x0000FFFF)));
+            }
+            catch (Exception ex)
+            {
+                // 忽略显示错误
+            }
         }
 
         public override void OnBeforeMissionBehaviorInitialize(Mission mission)
@@ -197,7 +226,7 @@ namespace IronBloodSiege
             {
                 if (!Settings.Instance.IsEnabled || Mission.Current == null)
                 {
-                    // 如果Mission变为null，说明战斗可能结束了，主动清理
+                    // 如果Mission变为null主动清理
                     OnRemoveBehavior();
                     return;
                 }

@@ -18,12 +18,12 @@ namespace IronBloodSiege
         public bool IsEnabled { get; set; } = true;
 
         [SettingPropertyFloatingInteger("攻城士兵士气阈值", 20f, 80f, "0", RequireRestart = false, 
-            HintText = "当攻城士兵士气低于此值时会被提升", Order = 0)]
+            HintText = "当攻城士兵士气低于此值时会被提升 默认 70", Order = 0)]
         [SettingPropertyGroup("战斗设置", GroupOrder = 1)]
         public float MoraleThreshold { get; set; } = 70f;
 
         [SettingPropertyFloatingInteger("士气提升速率", 5f, 30f, "0", RequireRestart = false, 
-            HintText = "攻城士兵每次提升士气的幅度", Order = 1)]
+            HintText = "攻城士兵每次提升士气的幅度 默认15", Order = 1)]
         [SettingPropertyGroup("战斗设置", GroupOrder = 1)]
         public float MoraleBoostRate { get; set; } = 15f;
 

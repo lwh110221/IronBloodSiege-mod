@@ -18,6 +18,7 @@ namespace IronBloodSiege
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
+            // MCM会自动注册设置，不需要手动调用
         }
 
         public override void OnInitialState()
@@ -42,7 +43,9 @@ namespace IronBloodSiege
             }
             catch (Exception ex)
             {
-                // 忽略显示错误
+                InformationManager.DisplayMessage(new InformationMessage(
+                    string.Format("铁血攻城信息显示错误: {0}", ex.Message),
+                    Color.FromUint(0xFF0000FF)));
             }
         }
 
@@ -138,7 +141,11 @@ namespace IronBloodSiege
             float strengthRatio = defenderCount > 0 ? (float)attackerCount / defenderCount : 2.0f;
             
             // 根据战场优势调整士气阈值
-            float moraleThreshold = strengthRatio >= 1.5f ? 30f : 50f; // 降低阈值
+            float moraleThreshold = Settings.Instance.MoraleThreshold;
+            if (strengthRatio >= 1.5f)
+            {
+                moraleThreshold *= 0.6f;
+            }
             
             // 只检查士气特别低的或正在逃跑的士兵
             var agentsToUpdate = team.ActiveAgents.Where(agent => 
@@ -154,7 +161,8 @@ namespace IronBloodSiege
                 float oldMorale = agent.GetMorale();
                 
                 // 根据战场优势设置不同的士气值
-                float targetMorale = strengthRatio >= 1.5f ? 70f : 90f; // 降低目标士气
+                float targetMorale = oldMorale + Settings.Instance.MoraleBoostRate;
+                if (targetMorale > 100f) targetMorale = 100f;
                 agent.SetMorale(targetMorale);
 
                 // 只在士气显著提升时才计数
@@ -175,12 +183,12 @@ namespace IronBloodSiege
             }
 
             // 如果有士兵被鼓舞且消息冷却时间已过，显示消息
-            if (hasMoraleBoosted && boostedCount >= 5 && // 至少5个士兵被鼓舞
+            if (hasMoraleBoosted && boostedCount >= 15 && // 至少15个士兵被鼓舞
                 Mission.Current.CurrentTime - _lastMessageTime >= MESSAGE_COOLDOWN)
             {
                 _lastMessageTime = Mission.Current.CurrentTime;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format("铁血攻城：已鼓舞{0}名士兵", boostedCount),
+                    string.Format("铁血攻城：{0}名士兵被鼓舞", boostedCount),
                     Color.FromUint(0xFFFF00FF)));
             }
         }
@@ -191,7 +199,7 @@ namespace IronBloodSiege
             if (_isSiegeScene && agent?.IsHuman == true && !agent.IsPlayerControlled && 
                 agent.Team == Mission.Current.AttackerTeam && agent.IsActive())
             {
-                agent.SetMorale(85f); // 提高初始士气
+                agent.SetMorale(Settings.Instance.MoraleThreshold); 
             }
         }
 
@@ -201,7 +209,9 @@ namespace IronBloodSiege
             if (_isSiegeScene && agent?.IsHuman == true && !agent.IsPlayerControlled && 
                 agent.Team == Mission.Current.AttackerTeam && agent.IsActive())
             {
-                agent.SetMorale(90f);
+                float targetMorale = Settings.Instance.MoraleThreshold + Settings.Instance.MoraleBoostRate;
+                if (targetMorale > 100f) targetMorale = 100f;
+                agent.SetMorale(targetMorale);
                 agent.StopRetreating();
                 
                 if (agent.Formation != null)

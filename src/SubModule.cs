@@ -236,7 +236,12 @@ namespace IronBloodSiege
             {
                 if (!Settings.Instance.IsEnabled || Mission.Current == null)
                 {
-                    // 如果Mission变为null主动清理
+                    return;
+                }
+
+                // 检查Mission是否已结束
+                if (Mission.Current.MissionEnded)
+                {
                     OnRemoveBehavior();
                     return;
                 }
@@ -263,38 +268,40 @@ namespace IronBloodSiege
         {
             try
             {
-                // 确保所有Formation恢复原状
-                if (_chargedFormations != null)
+                // 只在攻城战场景中进行清理
+                if (_isSiegeScene)
                 {
-                    foreach (Formation formation in _chargedFormations.ToList())
+                    // 恢复所有进攻方Formation的状态
+                    if (_chargedFormations != null)
                     {
-                        try
+                        foreach (Formation formation in _chargedFormations.ToList())
                         {
-                            if (formation != null && 
-                                formation.Team != null && 
-                                formation.Team.ActiveAgents.Count > 0)
+                            if (formation?.Team == Mission.Current?.AttackerTeam)
                             {
                                 formation.SetMovementOrder(MovementOrder.MovementOrderStop);
                             }
                         }
-                        catch
-                        {
-                            // 忽略单个Formation的清理错误
-                        }
+                        _chargedFormations.Clear();
                     }
-                    _chargedFormations.Clear();
-                }
 
-                // 重置所有状态
-                _isSiegeScene = false;
-                _lastMoraleUpdateTime = 0f;
-                _lastMessageTime = 0f;
+                    // 重置所有状态
+                    _isSiegeScene = false;
+                    _lastMoraleUpdateTime = 0f;
+                    _lastMessageTime = 0f;
+                    _chargedFormations = null;
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "铁血攻城：攻城战结束",
+                        Color.FromUint(0x00FF00FF)));
+                }
 
                 base.OnRemoveBehavior();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // 忽略清理过程中的错误
+                InformationManager.DisplayMessage(new InformationMessage(
+                    string.Format("铁血攻城清理错误: {0}", ex.Message),
+                    Color.FromUint(0xFF0000FF)));
             }
         }
     }

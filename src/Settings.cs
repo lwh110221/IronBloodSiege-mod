@@ -30,7 +30,7 @@ namespace IronBloodSiege
         public Settings()
         {
             IsEnabled = true;
-            MoraleThreshold = 40f;
+            MoraleThreshold = 70f;
             MoraleBoostRate = 15f;
         }
     }

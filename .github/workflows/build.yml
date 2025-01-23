@@ -25,17 +25,20 @@ jobs:
       
     - name: Build
       run: |
-        msbuild /p:Configuration=Release /p:Platform=x64
+        msbuild /p:Configuration=Release /p:Platform=AnyCPU
         
     - name: Create Mod Structure
       run: |
         mkdir -p IronBloodSiege/bin/Win64_Shipping_Client
-        copy bin/x64/Release/IronBloodSiege.dll IronBloodSiege/bin/Win64_Shipping_Client/
-        copy SubModule.xml IronBloodSiege/
+        # 显示构建输出目录内容
+        dir bin\Release
+        # 复制DLL文件
+        copy bin\Release\IronBloodSiege.dll IronBloodSiege\bin\Win64_Shipping_Client\
+        copy SubModule.xml IronBloodSiege\
         
     - name: Create Release ZIP
       run: |
-        Compress-Archive -Path IronBloodSiege -DestinationPath IronBloodSiege.zip
+        Compress-Archive -Path IronBloodSiege -DestinationPath IronBloodSiege.zip -Force
       
     - name: Get Version
       id: get_version

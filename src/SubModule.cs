@@ -225,9 +225,10 @@ namespace IronBloodSiege
                     PreventRetreat(agent.Formation);
                 }
                 
+                // 使用更醒目的颜色显示消息
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "已鼓舞攻城士兵",
-                    Color.FromUint(0x00FF00FF)));
+                    "铁血攻城：已鼓舞士兵",
+                    Color.FromUint(0xFFFF00FF)));  // 使用黄色
             }
         }
 
@@ -264,7 +265,7 @@ namespace IronBloodSiege
                     if (_lastUpdateDuration > 0.1f) // 如果单次更新耗时超过100ms
                     {
                         string perfMessage = string.Format(
-                            "性能警告 - 更新耗时: {0:F3}秒, 存活士兵: {1}, 伤亡率: {2:P1}", 
+                            "铁血攻城性能警告 - 更新耗时: {0:F3}秒, 存活士兵: {1}, 伤亡率: {2:P1}", 
                             _lastUpdateDuration,
                             attackerTeam.ActiveAgents.Count,
                             1f - ((float)attackerTeam.ActiveAgents.Count / _initialAttackerCount));
@@ -283,7 +284,7 @@ namespace IronBloodSiege
                 {
                     _lastMessageTime = currentTime;
                     string message = string.Format(
-                        "攻城方: 士气 {0:F1}, 存活 {1}", 
+                        "铁血攻城 - 攻城方: 士气 {0:F1}, 存活 {1}/{2}", 
                         attackerMorale,
                         attackerTeam.ActiveAgents.Count,
                         _initialAttackerCount);
@@ -299,7 +300,7 @@ namespace IronBloodSiege
             {
                 InformationManager.DisplayMessage(new InformationMessage(
                     string.Format("铁血攻城错误: {0}", ex.Message),
-                    Color.FromUint(0x00FF00FF)));
+                    Color.FromUint(0xFF0000FF)));
             }
         }
 

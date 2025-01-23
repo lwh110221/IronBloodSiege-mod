@@ -1,4 +1,4 @@
-namespace SiegeMoraleAdjuster
+namespace IronBloodSiege
 {
     public class Settings
     {

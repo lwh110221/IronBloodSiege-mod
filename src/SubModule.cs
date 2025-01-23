@@ -18,7 +18,6 @@ namespace IronBloodSiege
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-            // MCM会自动注册设置，不需要手动调用
         }
 
         public override void OnInitialState()
@@ -37,8 +36,7 @@ namespace IronBloodSiege
         {
             try
             {
-                InformationManager.DisplayMessage(new InformationMessage("铁血攻城 -加载成功！", Color.FromUint(0x0000FFFF)));
-                InformationManager.DisplayMessage(new InformationMessage("作者 ：Ahao", Color.FromUint(0x0000FFFF)));
+                InformationManager.DisplayMessage(new InformationMessage("铁血攻城 -加载成功！ 作者 ：Ahao", Color.FromUint(0x0000FFFF)));
                 InformationManager.DisplayMessage(new InformationMessage("email ：2285813721@qq.com", Color.FromUint(0x0000FFFF)));
             }
             catch (Exception ex)

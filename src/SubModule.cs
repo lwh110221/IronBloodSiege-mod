@@ -38,24 +38,34 @@ namespace IronBloodSiege
     public class SiegeMoraleBehavior : MissionBehavior
     {
         private bool _isSiegeScene = false;
-        private Dictionary<Agent, float> _agentMoraleHistory = new Dictionary<Agent, float>();
         private HashSet<Formation> _chargedFormations = new HashSet<Formation>();
         private const float MORALE_UPDATE_INTERVAL = 0.5f;
         private float _lastMoraleUpdateTime = 0f;
+        private float _lastMessageTime = 0f;
+        private const float MESSAGE_COOLDOWN = 10f; // 消息冷却时间10秒
 
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
 
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
-            
-            // 重置状态
-            _isSiegeScene = false;
-            _agentMoraleHistory.Clear();
-            _chargedFormations.Clear();
-            
-            // 检查场景
-            _isSiegeScene = CheckIfSiegeScene();
+            try
+            {
+                // 重置状态
+                _isSiegeScene = false;
+                _chargedFormations = new HashSet<Formation>();
+                _lastMoraleUpdateTime = 0f;
+                _lastMessageTime = 0f;
+                
+                // 检查场景
+                _isSiegeScene = CheckIfSiegeScene();
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    string.Format("铁血攻城初始化错误: {0}", ex.Message),
+                    Color.FromUint(0xFF0000FF)));
+            }
         }
 
         private bool CheckIfSiegeScene()
@@ -91,30 +101,43 @@ namespace IronBloodSiege
 
             _lastMoraleUpdateTime = Mission.Current.CurrentTime;
             
-            // 只检查士气低的或正在逃跑的士兵
+            // 计算攻守双方的有效战斗人数
+            int attackerCount = team.ActiveAgents.Count(a => a?.IsHuman == true && a.IsActive());
+            int defenderCount = Mission.Current.DefenderTeam?.ActiveAgents.Count(a => a?.IsHuman == true && a.IsActive()) ?? 0;
+            
+            // 计算战场优势
+            float strengthRatio = defenderCount > 0 ? (float)attackerCount / defenderCount : 2.0f;
+            
+            // 根据战场优势调整士气阈值
+            float moraleThreshold = strengthRatio >= 1.5f ? 30f : 50f; // 降低阈值
+            
+            // 只检查士气特别低的或正在逃跑的士兵
             var agentsToUpdate = team.ActiveAgents.Where(agent => 
                 agent?.IsHuman == true && 
                 !agent.IsPlayerControlled && 
                 agent.IsActive() && 
-                (agent.GetMorale() < 80f || agent.IsRetreating()));
+                (agent.GetMorale() < moraleThreshold || agent.IsRetreating()));
 
             bool hasMoraleBoosted = false;
+            int boostedCount = 0;
             foreach (Agent agent in agentsToUpdate)
             {
                 float oldMorale = agent.GetMorale();
-                agent.SetMorale(100f);
+                
+                // 根据战场优势设置不同的士气值
+                float targetMorale = strengthRatio >= 1.5f ? 70f : 90f; // 降低目标士气
+                agent.SetMorale(targetMorale);
 
-                // 如果士气显著提升，标记为已鼓舞
-                if (oldMorale < 50f)
+                // 只在士气显著提升时才计数
+                if (oldMorale < moraleThreshold * 0.7f) // 更严格的条件
                 {
+                    boostedCount++;
                     hasMoraleBoosted = true;
                 }
 
                 if (agent.IsRetreating())
                 {
                     agent.StopRetreating();
-                    hasMoraleBoosted = true;
-                    
                     if (agent.Formation != null && !_chargedFormations.Contains(agent.Formation))
                     {
                         PreventRetreat(agent.Formation);
@@ -122,11 +145,13 @@ namespace IronBloodSiege
                 }
             }
 
-            // 如果有士兵被鼓舞，显示消息
-            if (hasMoraleBoosted)
+            // 如果有士兵被鼓舞且消息冷却时间已过，显示消息
+            if (hasMoraleBoosted && boostedCount >= 5 && // 至少5个士兵被鼓舞
+                Mission.Current.CurrentTime - _lastMessageTime >= MESSAGE_COOLDOWN)
             {
+                _lastMessageTime = Mission.Current.CurrentTime;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "铁血攻城：已鼓舞士兵",
+                    string.Format("铁血攻城：已鼓舞{0}名士兵", boostedCount),
                     Color.FromUint(0xFFFF00FF)));
             }
         }
@@ -137,7 +162,7 @@ namespace IronBloodSiege
             if (_isSiegeScene && agent?.IsHuman == true && !agent.IsPlayerControlled && 
                 agent.Team == Mission.Current.AttackerTeam && agent.IsActive())
             {
-                agent.SetMorale(90f);
+                agent.SetMorale(85f); // 提高初始士气
             }
         }
 
@@ -147,7 +172,7 @@ namespace IronBloodSiege
             if (_isSiegeScene && agent?.IsHuman == true && !agent.IsPlayerControlled && 
                 agent.Team == Mission.Current.AttackerTeam && agent.IsActive())
             {
-                agent.SetMorale(100f);
+                agent.SetMorale(90f);
                 agent.StopRetreating();
                 
                 if (agent.Formation != null)
@@ -155,9 +180,14 @@ namespace IronBloodSiege
                     PreventRetreat(agent.Formation);
                 }
                 
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "铁血攻城：已阻止士兵撤退！",
-                    Color.FromUint(0xFFFF00FF)));
+                // 只在消息冷却时间过后显示消息
+                if (Mission.Current.CurrentTime - _lastMessageTime >= MESSAGE_COOLDOWN)
+                {
+                    _lastMessageTime = Mission.Current.CurrentTime;
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        "铁血攻城：已阻止士兵撤退！",
+                        Color.FromUint(0xFFFF00FF)));
+                }
             }
         }
 
@@ -166,7 +196,11 @@ namespace IronBloodSiege
             try
             {
                 if (!Settings.Instance.IsEnabled || Mission.Current == null)
+                {
+                    // 如果Mission变为null，说明战斗可能结束了，主动清理
+                    OnRemoveBehavior();
                     return;
+                }
 
                 _isSiegeScene = CheckIfSiegeScene();
                 if (!_isSiegeScene)
@@ -183,6 +217,45 @@ namespace IronBloodSiege
                 InformationManager.DisplayMessage(new InformationMessage(
                     string.Format("铁血攻城错误: {0}", ex.Message),
                     Color.FromUint(0xFF0000FF)));
+            }
+        }
+
+        public override void OnRemoveBehavior()
+        {
+            try
+            {
+                // 确保所有Formation恢复原状
+                if (_chargedFormations != null)
+                {
+                    foreach (Formation formation in _chargedFormations.ToList())
+                    {
+                        try
+                        {
+                            if (formation != null && 
+                                formation.Team != null && 
+                                formation.Team.ActiveAgents.Count > 0)
+                            {
+                                formation.SetMovementOrder(MovementOrder.MovementOrderStop);
+                            }
+                        }
+                        catch
+                        {
+                            // 忽略单个Formation的清理错误
+                        }
+                    }
+                    _chargedFormations.Clear();
+                }
+
+                // 重置所有状态
+                _isSiegeScene = false;
+                _lastMoraleUpdateTime = 0f;
+                _lastMessageTime = 0f;
+
+                base.OnRemoveBehavior();
+            }
+            catch (Exception)
+            {
+                // 忽略清理过程中的错误
             }
         }
     }

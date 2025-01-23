@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Module>
-    <Name value="铁血攻城"/>
+    <Name value="IronBloodSiege"/>
     <Id value="IronBloodSiege"/>
     <Version value="v1.0.0"/>
     <SingleplayerModule value="true"/>
@@ -13,9 +13,9 @@
     </DependedModules>
     <SubModules>
         <SubModule>
-            <Name value="SiegeMoraleAdjuster"/>
-            <DLLName value="SiegeMoraleAdjuster.dll"/>
-            <SubModuleClassType value="SiegeMoraleAdjuster.SubModule"/>
+            <Name value="IronBloodSiege"/>
+            <DLLName value="IronBloodSiege.dll"/>
+            <SubModuleClassType value="IronBloodSiege.SubModule"/>
             <Tags>
                 <Tag key="DedicatedServerType" value="none"/>
                 <Tag key="IsNoRenderModeElement" value="false"/>

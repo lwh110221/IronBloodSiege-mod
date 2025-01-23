@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Module>
-    <Name value="攻城士气调节器"/>
-    <Id value="SiegeMoraleAdjuster"/>
+    <Name value="铁血攻城"/>
+    <Id value="IronBloodSiege"/>
     <Version value="v1.0.0"/>
     <SingleplayerModule value="true"/>
     <MultiplayerModule value="false"/>

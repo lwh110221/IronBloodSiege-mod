@@ -7,14 +7,14 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace SiegeMoraleAdjuster
+namespace IronBloodSiege
 {
     public class SubModule : MBSubModuleBase
     {
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-            InformationManager.DisplayMessage(new InformationMessage("攻城士气调节器已加载", Color.FromUint(0x00FF00FF)));
+            InformationManager.DisplayMessage(new InformationMessage("铁血攻城已加载", Color.FromUint(0x00FF00FF)));
         }
 
         public override void OnBeforeMissionBehaviorInitialize(Mission mission)
@@ -25,12 +25,12 @@ namespace SiegeMoraleAdjuster
                 if (mission != null)
                 {
                     mission.AddMissionBehavior(new SiegeMoraleBehavior());
-                    InformationManager.DisplayMessage(new InformationMessage("攻城士气调节已添加", Color.FromUint(0x00FF00FF)));
+                    InformationManager.DisplayMessage(new InformationMessage("铁血攻城已启用", Color.FromUint(0x00FF00FF)));
                 }
             }
             catch (Exception ex)
             {
-                InformationManager.DisplayMessage(new InformationMessage(string.Format("SiegeMoraleAdjuster行为添加错误: {0}", ex.Message)));
+                InformationManager.DisplayMessage(new InformationMessage(string.Format("铁血攻城行为添加错误: {0}", ex.Message)));
             }
         }
     }
@@ -226,7 +226,7 @@ namespace SiegeMoraleAdjuster
                 }
                 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "阻止士兵逃跑并重置士气",
+                    "已鼓舞攻城士兵",
                     Color.FromUint(0x00FF00FF)));
             }
         }
@@ -283,7 +283,7 @@ namespace SiegeMoraleAdjuster
                 {
                     _lastMessageTime = currentTime;
                     string message = string.Format(
-                        "攻城方: 士气 {0:F1}, 存活 {1}/{2}", 
+                        "攻城方: 士气 {0:F1}, 存活 {1}", 
                         attackerMorale,
                         attackerTeam.ActiveAgents.Count,
                         _initialAttackerCount);
@@ -298,7 +298,7 @@ namespace SiegeMoraleAdjuster
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format("攻城士气调节器错误: {0}", ex.Message),
+                    string.Format("铁血攻城错误: {0}", ex.Message),
                     Color.FromUint(0x00FF00FF)));
             }
         }

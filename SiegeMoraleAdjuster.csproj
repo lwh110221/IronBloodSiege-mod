@@ -6,8 +6,8 @@
     <ProjectGuid>{A2D1D8E5-7C5C-4423-AB09-23C3A5D4F56F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SiegeMoraleAdjuster</RootNamespace>
-    <AssemblyName>SiegeMoraleAdjuster</AssemblyName>
+    <RootNamespace>IronBloodSiege</RootNamespace>
+    <AssemblyName>IronBloodSiege</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

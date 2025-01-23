@@ -1,6 +1,0 @@
-C:\Users\lwh11\Desktop\mod\bin\Debug\SiegeMoraleAdjuster.dll
-C:\Users\lwh11\Desktop\mod\bin\Debug\SiegeMoraleAdjuster.pdb
-C:\Users\lwh11\Desktop\mod\obj\Debug\SiegeMoraleAdjuster.csproj.AssemblyReference.cache
-C:\Users\lwh11\Desktop\mod\obj\Debug\SiegeMoraleAdjuster.csproj.CoreCompileInputs.cache
-C:\Users\lwh11\Desktop\mod\obj\Debug\SiegeMoraleAdjuster.dll
-C:\Users\lwh11\Desktop\mod\obj\Debug\SiegeMoraleAdjuster.pdb

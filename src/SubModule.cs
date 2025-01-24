@@ -286,7 +286,9 @@ namespace IronBloodSiege
             {
                 if (!_isDisabled)
                 {
+                    #if DEBUG
                     Logger.LogDebug("DisableMod", $"Disabling mod with reason: {reason}");
+                    #endif
                     _isDisabled = true;
                     _pendingDisable = false;
                     _disableTimer = 0f;
@@ -525,7 +527,9 @@ namespace IronBloodSiege
                     // 只在第一次检测到时记录日志
                     if (!_missionEnding)
                     {
+                        #if DEBUG
                         Logger.LogDebug("MissionTick", "Battle ended detected");
+                        #endif
                         _missionEnding = true;
                         DisableMod("Battle ended");
                     }
@@ -624,7 +628,9 @@ namespace IronBloodSiege
             {
                 if (!_missionEnding)
                 {
+                    #if DEBUG
                     Logger.LogDebug("OnEndMissionInternal", "Mission ending started");
+                    #endif
                     _missionEnding = true;
                     DisableMod("Mission ending");
                 }
@@ -632,7 +638,9 @@ namespace IronBloodSiege
             }
             catch (Exception ex)
             {
+                #if DEBUG
                 Logger.LogError("OnEndMissionInternal", ex);
+                #endif
             }
         }
 
@@ -642,7 +650,9 @@ namespace IronBloodSiege
             {
                 if (!_missionEnding)
                 {
+                    #if DEBUG
                     Logger.LogDebug("OnClearScene", "Scene clearing started");
+                    #endif
                     _missionEnding = true;
                     DisableMod("Scene clearing");
                 }
@@ -650,7 +660,9 @@ namespace IronBloodSiege
             }
             catch (Exception ex)
             {
+                #if DEBUG
                 Logger.LogError("OnClearScene", ex);
+                #endif
             }
         }
 
@@ -660,7 +672,9 @@ namespace IronBloodSiege
             {
                 if (_isBeingRemoved)
                 {
+                    #if DEBUG
                     Logger.LogDebug("OnRemoveBehavior", "Skipped duplicate removal");
+                    #endif
                     return;
                 }
 
@@ -668,7 +682,9 @@ namespace IronBloodSiege
                 _missionEnding = true;
                 _isDisabled = true;
                 
+                #if DEBUG
                 Logger.LogDebug("OnRemoveBehavior", "Starting cleanup");
+                #endif
                 
                 try
                 {
@@ -693,11 +709,15 @@ namespace IronBloodSiege
                     _defenderTeam = null;
                     _currentSceneName = null;
 
+                    #if DEBUG
                     Logger.LogDebug("OnRemoveBehavior", "Cleanup completed");
+                    #endif
                 }
                 catch (Exception ex)
                 {
+                    #if DEBUG
                     Logger.LogError("OnRemoveBehavior cleanup", ex);
+                    #endif
                 }
                 finally
                 {
@@ -707,14 +727,18 @@ namespace IronBloodSiege
                     }
                     catch (Exception ex)
                     {
+                        #if DEBUG
                         Logger.LogError("base OnRemoveBehavior", ex);
+                        #endif
                     }
                     _isBeingRemoved = false;
                 }
             }
             catch (Exception ex)
             {
+                #if DEBUG
                 Logger.LogError("OnRemoveBehavior outer", ex);
+                #endif
                 _isBeingRemoved = false;
             }
         }
@@ -723,8 +747,10 @@ namespace IronBloodSiege
         {
             try
             {
+                #if DEBUG
                 // 记录到日志文件
                 Logger.LogError(context, ex);
+                #endif
                 
                 // 显示在游戏中
                 ErrorMessage
@@ -737,6 +763,7 @@ namespace IronBloodSiege
             }
             catch
             {
+                #if DEBUG
                 // 确保错误处理本身不会崩溃
                 try
                 {
@@ -746,6 +773,7 @@ namespace IronBloodSiege
                 {
                     // 完全忽略
                 }
+                #endif
             }
         }
     }

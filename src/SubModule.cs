@@ -47,7 +47,9 @@ namespace IronBloodSiege
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_display}IronBlood Siege display error: {0}").ToString(), ex.Message),
+                    new TextObject("{=ibs_error_display}IronBlood Siege display error: {MESSAGE}")
+                        .SetTextVariable("MESSAGE", ex.Message)
+                        .ToString(),
                     Color.FromUint(0xFF0000FF)));
             }
         }
@@ -68,7 +70,9 @@ namespace IronBloodSiege
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_behavior}IronBlood Siege behavior error: {0}").ToString(), ex.Message)));
+                    new TextObject("{=ibs_error_behavior}IronBlood Siege behavior error: {MESSAGE}")
+                        .SetTextVariable("MESSAGE", ex.Message)
+                        .ToString()));
             }
         }
     }
@@ -76,15 +80,18 @@ namespace IronBloodSiege
     public class SiegeMoraleBehavior : MissionBehavior
     {
         private bool _isSiegeScene = false;
+        private bool _isDisabled = false;
+        private bool _pendingDisable = false;    // 用于标记是否处于等待禁用状态
+        private float _disableTimer = 0f;        // 禁用计时器
+        private const float DISABLE_DELAY = 10f; // 禁用延迟时间（10秒）
+        private int _initialAttackerCount = 0;   // 开始计时时的攻击方士兵数量
         private HashSet<Formation> _chargedFormations = new HashSet<Formation>();
         private const float MORALE_UPDATE_INTERVAL = 0.5f;
         private float _lastMoraleUpdateTime = 0f;
         private float _lastMessageTime = 0f;
         private const float MESSAGE_COOLDOWN = 10f;
-        private const float RETREAT_MESSAGE_COOLDOWN = 30f;  // 不再铁血消息的冷却时间
-        private float _lastRetreatMessageTime = 0f;          // 上次显示不再铁血消息的时间
-        private int _retreatMessageCount = 0;                // 不再铁血消息显示次数
-        private const int MAX_RETREAT_MESSAGES = 5;          // 最大不再铁血消息显示次数
+        private const float RETREAT_MESSAGE_COOLDOWN = 25f;  // 不再铁血消息的冷却时间
+        private float _lastRetreatMessageTime = 0f;
 
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
 
@@ -95,11 +102,13 @@ namespace IronBloodSiege
             {
                 // 重置状态
                 _isSiegeScene = false;
+                _isDisabled = false;
+                _pendingDisable = false;
+                _disableTimer = 0f;
                 _chargedFormations = new HashSet<Formation>();
                 _lastMoraleUpdateTime = 0f;
                 _lastMessageTime = 0f;
                 _lastRetreatMessageTime = 0f;
-                _retreatMessageCount = 0; 
                 
                 // 检查场景
                 _isSiegeScene = CheckIfSiegeScene();
@@ -107,7 +116,9 @@ namespace IronBloodSiege
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_init}IronBlood Siege initialization error: {0}").ToString(), ex.Message),
+                    new TextObject("{=ibs_error_init}IronBlood Siege initialization error: {MESSAGE}")
+                        .SetTextVariable("MESSAGE", ex.Message)
+                        .ToString(),
                     Color.FromUint(0xFF0000FF)));
             }
         }
@@ -136,14 +147,15 @@ namespace IronBloodSiege
 
         private bool ShouldAllowRetreat(Team attackerTeam, int attackerCount)
         {
-            if (attackerTeam == null || Mission.Current?.DefenderTeam == null)
-                return false;
+            if (_isDisabled || attackerTeam == null || Mission.Current?.DefenderTeam == null)
+                return true;
 
             // 优先使用固定数量触发
             if (Settings.Instance.EnableFixedRetreat)
             {
                 if (attackerCount <= Settings.Instance.RetreatThreshold)
                 {
+                    StartDisableTimer("Fixed threshold reached");
                     return true;
                 }
             }
@@ -153,11 +165,72 @@ namespace IronBloodSiege
                 int defenderCount = Mission.Current.DefenderTeam.ActiveAgents.Count(a => a?.IsHuman == true && a.IsActive());
                 if (defenderCount > 0 && attackerCount < defenderCount * 0.7f)
                 {
+                    StartDisableTimer("Ratio threshold reached");
                     return true;
                 }
             }
 
+            // 如果条件不满足，取消待禁用状态
+            _pendingDisable = false;
+            _disableTimer = 0f;
             return false;
+        }
+
+        private void StartDisableTimer(string reason)
+        {
+            if (!_pendingDisable)
+            {
+                _pendingDisable = true;
+                _disableTimer = 0f;
+                // 记录开始计时时的攻击方士兵数量
+                _initialAttackerCount = Mission.Current?.AttackerTeam?.ActiveAgents.Count(a => a?.IsHuman == true && a.IsActive()) ?? 0;
+                ShowRetreatMessage(reason);
+            }
+        }
+
+        private void ShowRetreatMessage(string reason)
+        {
+            if (Mission.Current.CurrentTime - _lastRetreatMessageTime >= RETREAT_MESSAGE_COOLDOWN)
+            {
+                _lastRetreatMessageTime = Mission.Current.CurrentTime;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    new TextObject("{=ibs_retreat_message}IronBlood Siege: Insufficient attacking forces, iron will disabled").ToString(),
+                    Color.FromUint(0xFFFF00FF)));
+            }
+        }
+
+        private void DisableMod(string reason)
+        {
+            if (!_isDisabled)
+            {
+                _isDisabled = true;
+                _pendingDisable = false;
+                _disableTimer = 0f;
+                RestoreAllFormations();
+                ShowRetreatMessage(reason);
+            }
+        }
+
+        private void RestoreAllFormations()
+        {
+            if (_chargedFormations != null)
+            {
+                foreach (Formation formation in _chargedFormations.ToList())
+                {
+                    try
+                    {
+                        if (formation?.Team == Mission.Current?.AttackerTeam)
+                        {
+                            formation.SetMovementOrder(MovementOrder.MovementOrderStop);
+                        }
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+                _chargedFormations.Clear();
+            }
         }
 
         private void AdjustTeamMorale(Team team, float dt)
@@ -178,11 +251,9 @@ namespace IronBloodSiege
             if (ShouldAllowRetreat(team, attackerCount))
             {
                 // 如果应该禁用，显示消息并临时禁用mod
-                if (_retreatMessageCount < MAX_RETREAT_MESSAGES && 
-                    Mission.Current.CurrentTime - _lastRetreatMessageTime >= RETREAT_MESSAGE_COOLDOWN)
+                if (Mission.Current.CurrentTime - _lastRetreatMessageTime >= RETREAT_MESSAGE_COOLDOWN)
                 {
                     _lastRetreatMessageTime = Mission.Current.CurrentTime;
-                    _retreatMessageCount++;
                     InformationManager.DisplayMessage(new InformationMessage(
                         new TextObject("{=ibs_retreat_message}IronBlood Siege: Insufficient attacking forces, iron will disabled").ToString(),
                         Color.FromUint(0xFFFF00FF)));
@@ -223,22 +294,36 @@ namespace IronBloodSiege
                 agent.IsActive() && 
                 (agent.GetMorale() < moraleThreshold || agent.IsRetreating()));
 
-            bool hasMoraleBoosted = false;
             int boostedCount = 0;
             foreach (Agent agent in agentsToUpdate)
             {
                 float oldMorale = agent.GetMorale();
                 
-                // 根据战场优势设置不同的士气值
-                float targetMorale = oldMorale + Settings.Instance.MoraleBoostRate;
-                if (targetMorale > 100f) targetMorale = 100f;
-                agent.SetMorale(targetMorale);
-
-                // 只在士气显著提升时才计数
-                if (oldMorale < moraleThreshold * 0.7f)
+                // 直接使用设置的阈值，不再额外计算
+                if (oldMorale < moraleThreshold || agent.IsRetreating())
                 {
-                    boostedCount++;
-                    hasMoraleBoosted = true;
+                    // 从用户设置中获取士气提升速率
+                    float targetMorale = oldMorale + Settings.Instance.MoraleBoostRate;
+                    
+                    // 正在逃跑的士兵给予额外的士气提升
+                    if (agent.IsRetreating())
+                    {
+                        targetMorale += Settings.Instance.MoraleBoostRate * 0.5f;
+                    }
+                    
+                    // 设置上限为100
+                    if (targetMorale > 100f) 
+                    {
+                        targetMorale = 100f;
+                    }
+                    
+                    agent.SetMorale(targetMorale);
+
+                    // 只在实际提升士气时计数
+                    if (targetMorale > oldMorale)
+                    {
+                        boostedCount++;
+                    }
                 }
 
                 if (agent.IsRetreating())
@@ -251,13 +336,14 @@ namespace IronBloodSiege
                 }
             }
 
-            // 如果有士兵被鼓舞且消息冷却时间已过，显示消息
-            if (hasMoraleBoosted && boostedCount >= 10 && 
-                Mission.Current.CurrentTime - _lastMessageTime >= MESSAGE_COOLDOWN)
+            // 只在确实有士兵被鼓舞且数量达到阈值时才显示消息
+            if (boostedCount >= 10 && Mission.Current.CurrentTime - _lastMessageTime >= MESSAGE_COOLDOWN)
             {
                 _lastMessageTime = Mission.Current.CurrentTime;
+                var textObject = new TextObject("{=ibs_morale_boost}IronBlood Siege: {COUNT} troops were inspired");
+                textObject.SetTextVariable("COUNT", boostedCount);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_morale_boost}IronBlood Siege: {0} troops were inspired").ToString(), boostedCount),
+                    textObject.ToString(),
                     Color.FromUint(0xFFFF00FF)));
             }
         }
@@ -317,9 +403,55 @@ namespace IronBloodSiege
                 }
 
                 // 检查Mission是否已结束
-                if (Mission.Current.MissionEnded)
+                if (Mission.Current.MissionEnded || Mission.Current.CheckIfBattleInRetreat())
                 {
+                    DisableMod("Mission ended");
                     OnRemoveBehavior();
+                    return;
+                }
+
+                // 处理延迟禁用
+                if (_pendingDisable)
+                {
+                    _disableTimer += dt;
+                    if (_disableTimer >= DISABLE_DELAY)
+                    {
+                        // 获取当前攻击方士兵数量
+                        int currentAttackerCount = Mission.Current.AttackerTeam?.ActiveAgents.Count(a => a?.IsHuman == true && a.IsActive()) ?? 0;
+                        
+                        // 如果当前士兵数量大于初始数量，取消禁用计时
+                        if (currentAttackerCount > _initialAttackerCount)
+                        {
+                            _pendingDisable = false;
+                            _disableTimer = 0f;
+                            return;
+                        }
+                        
+                        // 再次检查条件，确认是否真的需要禁用
+                        if (ShouldAllowRetreat(Mission.Current.AttackerTeam, currentAttackerCount))
+                        {
+                            DisableMod("Delay threshold reached");
+                        }
+                        
+                        // 无论如何都重置计时器状态
+                        _pendingDisable = false;
+                        _disableTimer = 0f;
+                    }
+                    else
+                    {
+                        // 在计时过程中也检查士兵数量变化
+                        int currentAttackerCount = Mission.Current.AttackerTeam?.ActiveAgents.Count(a => a?.IsHuman == true && a.IsActive()) ?? 0;
+                        if (currentAttackerCount > _initialAttackerCount)
+                        {
+                            _pendingDisable = false;
+                            _disableTimer = 0f;
+                            return;
+                        }
+                    }
+                }
+
+                if (_isDisabled)
+                {
                     return;
                 }
 
@@ -336,8 +468,11 @@ namespace IronBloodSiege
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_general}IronBlood Siege error: {0}").ToString(), ex.Message),
+                    new TextObject("{=ibs_error_general}IronBlood Siege error: {MESSAGE}")
+                        .SetTextVariable("MESSAGE", ex.Message)
+                        .ToString(),
                     Color.FromUint(0xFF0000FF)));
+                DisableMod("Error occurred");
             }
         }
 
@@ -345,37 +480,25 @@ namespace IronBloodSiege
         {
             try
             {
-                // 在清理前确保Mission.Current不为null
-                if (Mission.Current != null)
+                _isDisabled = true;
+                _pendingDisable = false;
+                RestoreAllFormations();
+
+                // 确保所有Formation都被正确处理
+                if (Mission.Current?.AttackerTeam != null)
                 {
-                    // 恢复所有Formation的状态
-                    if (_chargedFormations != null)
+                    foreach (Formation formation in Mission.Current.AttackerTeam.Formations)
                     {
-                        var formationsToRestore = _chargedFormations.ToList();
-                        foreach (var formation in formationsToRestore)
+                        try
                         {
-                            try
+                            if (formation != null)
                             {
-                                if (formation != null && 
-                                    formation.Team != null && 
-                                    formation.Team.ActiveAgents != null && 
-                                    formation.Team.ActiveAgents.Count > 0)
-                                {
-                                    formation.SetMovementOrder(MovementOrder.MovementOrderStop);
-                                    foreach (var agent in formation.Team.ActiveAgents)
-                                    {
-                                        if (agent?.IsHuman == true && agent.IsActive())
-                                        {
-                                            agent.StopRetreating();
-                                        }
-                                    }
-                                }
+                                formation.SetMovementOrder(MovementOrder.MovementOrderStop);
                             }
-                            catch (Exception) 
-                            {
-                                // 忽略单个formation的清理错误，继续处理其他formation
-                                continue;
-                            }
+                        }
+                        catch
+                        {
+                            continue;
                         }
                     }
                 }
@@ -384,30 +507,29 @@ namespace IronBloodSiege
             {
                 // 记录错误但不抛出异常
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_cleanup}IronBlood Siege cleanup error: {0}").ToString(), ex.Message),
+                    new TextObject("{=ibs_error_cleanup}IronBlood Siege cleanup error: {MESSAGE}")
+                        .SetTextVariable("MESSAGE", ex.Message)
+                        .ToString(),
                     Color.FromUint(0xFF0000FF)));
             }
             finally
             {
                 // 确保在任何情况下都清理资源
                 _isSiegeScene = false;
+                _isDisabled = true;
+                _pendingDisable = false;
                 _lastMoraleUpdateTime = 0f;
                 _lastMessageTime = 0f;
+                _lastRetreatMessageTime = 0f;
+                _disableTimer = 0f;
+                
                 if (_chargedFormations != null)
                 {
                     _chargedFormations.Clear();
                     _chargedFormations = null;
                 }
                 
-                // 调用基类的清理方法
-                try
-                {
-                    base.OnRemoveBehavior();
-                }
-                catch
-                {
-                    // 忽略基类清理时的错误
-                }
+                base.OnRemoveBehavior();
             }
         }
     }

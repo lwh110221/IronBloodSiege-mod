@@ -66,3 +66,69 @@
 ## 许可
 本mod仅供个人使用，禁止用于商业用途。
 
+# IronBlood Siege
+
+## Introduction
+IronBlood Siege is a mod for Mount & Blade II: Bannerlord that enhances the siege battle experience. In vanilla siege battles, attacking troops often retreat mindlessly, sometimes even when they vastly outnumber the defenders, leading to poor siege experience for players seeking challenging gameplay. This mod effectively prevents troops from retreating unnecessarily and dynamically adjusts morale values to ensure siege sustainability.
+
+## Features
+- Prevents troops from retreating unnecessarily during sieges
+- Dynamically adjusts morale values to ensure siege sustainability
+- Fully configurable settings
+- Real-time battlefield status feedback
+
+## Battle Advantage Ratio Calculation
+- Uses formula: strengthRatio = attackerCount / defenderCount
+- If defender count is 0, defaults to 2.0 (indicating significant advantage)
+- This ratio reflects the numerical comparison between attackers and defenders
+
+## Dynamic Morale Threshold Adjustment
+- When attackers have significant numerical advantage (ratio >= 1.5), morale threshold is reduced
+- Specifically, the original threshold is multiplied by 0.6
+- This means the system has more lenient morale requirements in advantageous situations
+
+## Requirements
+- Game Version: Mount & Blade II: Bannerlord 1.2.12
+- MCM (Mod Configuration Menu) v5+
+
+## Installation
+1. Ensure MCM (Mod Configuration Menu) is installed
+2. Copy mod files to the game's Modules folder
+3. Enable "IronBlood Siege" in the launcher's Mods section
+4. Ensure MCM loads before this mod in the load order
+
+## Settings Guide
+The following settings can be adjusted through the MCM menu in-game:
+
+### Basic Settings
+- Enable Mod: Toggle mod functionality on/off
+
+### Combat Settings
+- Siege Troop Morale Threshold (20-80):
+  - Morale will be boosted when below this value
+  - Default: 70
+  - Recommendation: Set lower when advantaged, higher when disadvantaged
+
+- Morale Boost Rate (5-30):
+  - Amount of morale boost per update
+  - Default: 15
+  - Recommendation: 15-20 is typically suitable
+
+## Usage Tips
+- The mod automatically takes effect during siege battles
+- Settings can be adjusted anytime through the ESC menu during battle
+- In multi-mod setups, recommend loading this mod last
+
+## Version History
+- v1.0.0
+  - Initial release
+  - Implemented core features
+  - Added MCM configuration support
+
+## Contact
+- Author: Ahao
+- Email: 2285813721@qq.com
+
+## License
+This mod is for personal use only. Commercial use is prohibited.
+

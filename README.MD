@@ -61,7 +61,7 @@
 
 ## 联系方式
 - 作者：Ahao
-- 邮箱：2285813721@qq.com
+- 邮箱：2285813721@qq.com,ahao221x@gmail.com
 
 ## 许可
 本mod仅供个人使用，禁止用于商业用途。
@@ -127,7 +127,7 @@ The following settings can be adjusted through the MCM menu in-game:
 
 ## Contact
 - Author: Ahao
-- Email: 2285813721@qq.com
+- Email: 2285813721@qq.com,ahao221x@gmail.com
 
 ## License
 This mod is for personal use only. Commercial use is prohibited.

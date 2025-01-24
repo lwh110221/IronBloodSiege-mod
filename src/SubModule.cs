@@ -41,7 +41,7 @@ namespace IronBloodSiege
                     new TextObject("{=ibs_mod_loaded}铁血攻城 -加载成功！ 作者 ：Ahao").ToString(), 
                     Color.FromUint(0x0000FFFF)));
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=ibs_mod_email}email ：2285813721@qq.com").ToString(), 
+                    new TextObject("{=ibs_mod_email}email ：ahao221x@gmail.com").ToString(), 
                     Color.FromUint(0x0000FFFF)));
             }
             catch (Exception ex)

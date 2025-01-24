@@ -35,6 +35,7 @@
     <string id="ibs_prevent_retreat" text="IronBlood Siege: Prevented troops from retreating!"/>
     <string id="ibs_morale_boost" text="IronBlood Siege: {COUNT} troops were inspired"/>
     <string id="ibs_retreat_message" text="IronBlood Siege: Insufficient attacking forces, iron will disabled"/>
+    <string id="ibs_reinforcement_message" text="IronBlood Siege: Reinforcements have arrived, iron will attack resumed!"/>
     
     <!-- 错误消息 -->
     <string id="ibs_error_display" text="IronBlood Siege display error: {MESSAGE}"/>

@@ -83,6 +83,7 @@ namespace IronBloodSiege
         private static readonly Color WarningColor = Color.FromUint(0xFFFF00FF);
         private static readonly Color ErrorColor = Color.FromUint(0xFF0000FF);
         private static readonly Color InfoColor = Color.FromUint(0x00FF00FF);
+        private static readonly Color NormalColor = Color.FromUint(0x000000FF);
 
         // 缓存常用的消息模板
         private static readonly TextObject MoraleBoostMessage = new TextObject("{=ibs_morale_boost}IronBlood Siege: {COUNT} troops were inspired");
@@ -107,7 +108,7 @@ namespace IronBloodSiege
         private bool _isDisabled = false;
         private bool _pendingDisable = false;    // 用于标记是否处于等待禁用状态
         private float _disableTimer = 0f;        // 禁用计时器
-        private const float DISABLE_DELAY = 10f; // 禁用延迟时间（10秒）
+        private const float DISABLE_DELAY = 15f; // 禁用延迟时间（15秒）
         private int _initialAttackerCount = 0;   // 开始计时时的攻击方士兵数量
         private const float MORALE_UPDATE_INTERVAL = 0.5f;
         private float _lastMoraleUpdateTime = 0f;
@@ -580,7 +581,7 @@ namespace IronBloodSiege
             try
             {
                 _disableTimer += dt;
-                if (_disableTimer >= DISABLE_DELAY)
+                if (_disableTimer >= DISABLE_DELAY)  // 使用DISABLE_DELAY常量
                 {
                     // 获取当前攻击方士兵数量
                     int currentAttackerCount = SafetyChecks.GetAttackerCount(Mission.Current.AttackerTeam);
@@ -590,9 +591,15 @@ namespace IronBloodSiege
                     {
                         _pendingDisable = false;
                         _disableTimer = 0f;
+                        
+                        // 援兵到达的消息显示
+                        GameTexts.SetVariable("MESSAGE", new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!"));
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            GameTexts.GetVariable("MESSAGE").ToString(),
+                            InfoColor));
                         return;
                     }
-                    
+
                     // 再次检查条件，确认是否真的需要禁用
                     if (ShouldAllowRetreat(Mission.Current.AttackerTeam, currentAttackerCount))
                     {
@@ -611,6 +618,12 @@ namespace IronBloodSiege
                     {
                         _pendingDisable = false;
                         _disableTimer = 0f;
+                        
+                        // 添加援兵到达的消息显示
+                        GameTexts.SetVariable("MESSAGE", new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!"));
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            GameTexts.GetVariable("MESSAGE").ToString(),
+                            InfoColor));
                     }
                 }
             }

@@ -35,6 +35,7 @@
     <string id="ibs_prevent_retreat" text="铁血攻城：已阻止士兵撤退！" />
     <string id="ibs_morale_boost" text="铁血攻城：{COUNT}名士兵被鼓舞" />
     <string id="ibs_retreat_message" text="铁血攻城：攻城部队人数不足，不再铁血进攻" />
+    <string id="ibs_reinforcement_message" text="铁血攻城：援兵抵达战场，再次发起铁血进攻！" />
     
     <!-- Error Messages -->
     <string id="ibs_error_display" text="铁血攻城信息显示错误: {MESSAGE}" />

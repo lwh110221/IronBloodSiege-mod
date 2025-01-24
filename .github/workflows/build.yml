@@ -45,6 +45,8 @@ jobs:
         # 复制DLL文件
         copy "bin\Release\IronBloodSiege.dll" "IronBloodSiege\bin\Win64_Shipping_Client\"
         copy "SubModule.xml" "IronBloodSiege\"
+        # 复制本地化文件
+        xcopy /E /I "ModuleData" "IronBloodSiege\ModuleData"
         
     - name: Create Release ZIP
       run: |
@@ -60,11 +62,13 @@ jobs:
           铁血攻城 Mod ${{ github.ref_name }}
           
           ## 更新内容
+          - 添加本地化组件 TaleWorlds.Localization支持
+          - 添加英文本地化
           - 自动构建发布
           
           ## 安装说明
-          1. 下载 IronBloodSiege.zip
-          2. 解压到游戏的 Modules 目录
+          1. 下载mod： IronBloodSiege.zip 压缩包
+          2. 整个mod文件夹解压到游戏的 Modules 目录
           3. 启动游戏，在启动器中启用该 Mod
         draft: false
         prerelease: false

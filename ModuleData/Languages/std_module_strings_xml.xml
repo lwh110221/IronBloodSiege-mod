@@ -33,14 +33,14 @@
     
     <!-- 消息 -->
     <string id="ibs_prevent_retreat" text="IronBlood Siege: Prevented troops from retreating!"/>
-    <string id="ibs_morale_boost" text="IronBlood Siege: {0} troops were inspired"/>
+    <string id="ibs_morale_boost" text="IronBlood Siege: {COUNT} troops were inspired"/>
     <string id="ibs_retreat_message" text="IronBlood Siege: Insufficient attacking forces, iron will disabled"/>
     
     <!-- 错误消息 -->
-    <string id="ibs_error_display" text="IronBlood Siege display error: {0}"/>
-    <string id="ibs_error_behavior" text="IronBlood Siege behavior error: {0}"/>
-    <string id="ibs_error_init" text="IronBlood Siege initialization error: {0}"/>
-    <string id="ibs_error_general" text="IronBlood Siege error: {0}"/>
-    <string id="ibs_error_cleanup" text="IronBlood Siege cleanup error: {0}"/>
+    <string id="ibs_error_display" text="IronBlood Siege display error: {MESSAGE}"/>
+    <string id="ibs_error_behavior" text="IronBlood Siege behavior error: {MESSAGE}"/>
+    <string id="ibs_error_init" text="IronBlood Siege initialization error: {MESSAGE}"/>
+    <string id="ibs_error_general" text="IronBlood Siege error: {MESSAGE}"/>
+    <string id="ibs_error_cleanup" text="IronBlood Siege cleanup error: {MESSAGE}"/>
   </strings>
 </base>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Module>
-    <Name value="铁血攻城-Ahao"/>
+    <Name value="IronBloodSiege-Ahao"/>
     <Id value="IronBloodSiege"/>
     <Version value="v1.0.0"/>
     <SingleplayerModule value="true"/>
@@ -23,5 +23,9 @@
             </Tags>
         </SubModule>
     </SubModules>
-    <Xmls/>
+    <Xmls>
+        <XmlNode>
+            <XmlName id="Languages" path="ModuleData/Languages/"/>
+        </XmlNode>
+    </Xmls>
 </Module> 

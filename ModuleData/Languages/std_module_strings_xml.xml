@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+  <tags>
+    <tag language="English" />
+  </tags>
+  <strings>
+    <!-- Mod 信息 -->
+    <string id="ibs_mod_loaded" text="IronBlood Siege - Loaded Successfully! Author: Ahao"/>
+    <string id="ibs_mod_email" text="email: ahao221x@gmail.com"/>
+    <string id="ibs_mod_name" text="IronBlood Siege"/>
+    <string id="ibs_mod_enabled" text="IronBlood Siege is enabled"/>
+    
+    <!-- 设置 -->
+    <string id="ibs_settings_basic" text="Basic Settings"/>
+    <string id="ibs_enable_mod" text="Enable Mod"/>
+    <string id="ibs_enable_mod_hint" text="Whether to enable IronBlood Siege - Note: Author is just a student, please be kind"/>
+    
+    <!-- 撤退设置 -->
+    <string id="ibs_retreat_conditions" text="Iron Will Disable Conditions (Note: Choose only one of the two methods!)"/>
+    <string id="ibs_fixed_retreat" text="Fixed Number Iron Will Disable"/>
+    <string id="ibs_fixed_retreat_hint" text="Disable iron will when attacker troops fall below specified number"/>
+    <string id="ibs_retreat_threshold" text="Fixed Number Threshold"/>
+    <string id="ibs_retreat_threshold_hint" text="Disable iron will when attacker troops fall below this number"/>
+    <string id="ibs_ratio_retreat" text="Auto Ratio Iron Will Disable"/>
+    <string id="ibs_ratio_retreat_hint" text="Disable iron will when attacker troops fall below 70% of defenders"/>
+    
+    <!-- 战斗设置 -->
+    <string id="ibs_combat_settings" text="Combat Settings"/>
+    <string id="ibs_morale_threshold" text="Siege Troop Morale Threshold"/>
+    <string id="ibs_morale_threshold_hint" text="Morale will be boosted when troops fall below this value. Default: 70"/>
+    <string id="ibs_morale_boost_rate" text="Morale Boost Rate"/>
+    <string id="ibs_morale_boost_rate_hint" text="Amount of morale boost per update. Default: 15"/>
+    
+    <!-- 消息 -->
+    <string id="ibs_prevent_retreat" text="IronBlood Siege: Prevented troops from retreating!"/>
+    <string id="ibs_morale_boost" text="IronBlood Siege: {0} troops were inspired"/>
+    <string id="ibs_retreat_message" text="IronBlood Siege: Insufficient attacking forces, iron will disabled"/>
+    
+    <!-- 错误消息 -->
+    <string id="ibs_error_display" text="IronBlood Siege display error: {0}"/>
+    <string id="ibs_error_behavior" text="IronBlood Siege behavior error: {0}"/>
+    <string id="ibs_error_init" text="IronBlood Siege initialization error: {0}"/>
+    <string id="ibs_error_general" text="IronBlood Siege error: {0}"/>
+    <string id="ibs_error_cleanup" text="IronBlood Siege cleanup error: {0}"/>
+  </strings>
+</base>

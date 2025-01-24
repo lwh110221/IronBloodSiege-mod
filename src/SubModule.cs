@@ -1,7 +1,7 @@
 // 铁血攻城
 // 作者：Ahao
 // 版本：1.0.0
-// email ：2285813721@qq.com
+// email ：2285813721@qq.com，ahao221x@gmail.com
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
@@ -38,16 +38,16 @@ namespace IronBloodSiege
             try
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=ibs_mod_loaded}铁血攻城 -加载成功！ 作者 ：Ahao").ToString(), 
+                    new TextObject("{=ibs_mod_loaded}IronBlood Siege - Loaded Successfully! Author: Ahao").ToString(), 
                     Color.FromUint(0x0000FFFF)));
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=ibs_mod_email}email ：ahao221x@gmail.com").ToString(), 
+                    new TextObject("{=ibs_mod_email}email: ahao221x@gmail.com").ToString(), 
                     Color.FromUint(0x0000FFFF)));
             }
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_display}铁血攻城信息显示错误: {0}").ToString(), ex.Message),
+                    string.Format(new TextObject("{=ibs_error_display}IronBlood Siege display error: {0}").ToString(), ex.Message),
                     Color.FromUint(0xFF0000FF)));
             }
         }
@@ -61,14 +61,14 @@ namespace IronBloodSiege
                 {
                     mission.AddMissionBehavior(new SiegeMoraleBehavior());
                     InformationManager.DisplayMessage(new InformationMessage(
-                        new TextObject("{=ibs_mod_enabled}铁血攻城已启用").ToString(), 
+                        new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
                         Color.FromUint(0x00FF00FF)));
                 }
             }
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_behavior}铁血攻城行为添加错误: {0}").ToString(), ex.Message)));
+                    string.Format(new TextObject("{=ibs_error_behavior}IronBlood Siege behavior error: {0}").ToString(), ex.Message)));
             }
         }
     }
@@ -107,7 +107,7 @@ namespace IronBloodSiege
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_init}铁血攻城初始化错误: {0}").ToString(), ex.Message),
+                    string.Format(new TextObject("{=ibs_error_init}IronBlood Siege initialization error: {0}").ToString(), ex.Message),
                     Color.FromUint(0xFF0000FF)));
             }
         }
@@ -184,7 +184,7 @@ namespace IronBloodSiege
                     _lastRetreatMessageTime = Mission.Current.CurrentTime;
                     _retreatMessageCount++;
                     InformationManager.DisplayMessage(new InformationMessage(
-                        new TextObject("{=ibs_retreat_message}铁血攻城：攻城部队人数不足，不再铁血进攻").ToString(),
+                        new TextObject("{=ibs_retreat_message}IronBlood Siege: Insufficient attacking forces, iron will disabled").ToString(),
                         Color.FromUint(0xFFFF00FF)));
                 }
                 
@@ -257,7 +257,7 @@ namespace IronBloodSiege
             {
                 _lastMessageTime = Mission.Current.CurrentTime;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_morale_boost}铁血攻城：{0}名士兵被鼓舞").ToString(), boostedCount),
+                    string.Format(new TextObject("{=ibs_morale_boost}IronBlood Siege: {0} troops were inspired").ToString(), boostedCount),
                     Color.FromUint(0xFFFF00FF)));
             }
         }
@@ -301,7 +301,7 @@ namespace IronBloodSiege
                 {
                     _lastMessageTime = Mission.Current.CurrentTime;
                     InformationManager.DisplayMessage(new InformationMessage(
-                        new TextObject("{=ibs_prevent_retreat}铁血攻城：已阻止士兵撤退！").ToString(),
+                        new TextObject("{=ibs_prevent_retreat}IronBlood Siege: Prevented troops from retreating!").ToString(),
                         Color.FromUint(0xFFFF00FF)));
                 }
             }
@@ -336,7 +336,7 @@ namespace IronBloodSiege
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_general}铁血攻城错误: {0}").ToString(), ex.Message),
+                    string.Format(new TextObject("{=ibs_error_general}IronBlood Siege error: {0}").ToString(), ex.Message),
                     Color.FromUint(0xFF0000FF)));
             }
         }
@@ -384,7 +384,7 @@ namespace IronBloodSiege
             {
                 // 记录错误但不抛出异常
                 InformationManager.DisplayMessage(new InformationMessage(
-                    string.Format(new TextObject("{=ibs_error_cleanup}铁血攻城清理错误: {0}").ToString(), ex.Message),
+                    string.Format(new TextObject("{=ibs_error_cleanup}IronBlood Siege cleanup error: {0}").ToString(), ex.Message),
                     Color.FromUint(0xFF0000FF)));
             }
             finally

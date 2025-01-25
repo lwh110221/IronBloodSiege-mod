@@ -31,15 +31,56 @@ namespace IronBloodSiege
             {
                 if (!IsMissionValid()) return false;
 
-                return Mission.Current.Mode == MissionMode.Battle && 
-                       !string.IsNullOrEmpty(Mission.Current.SceneName) &&
-                       (Mission.Current.SceneName.ToLower().Contains("siege") || 
-                        Mission.Current.SceneName.ToLower().Contains("castle")) &&
-                       Mission.Current.DefenderTeam != null &&
-                       Mission.Current.AttackerTeam != null;
+                var mission = Mission.Current;
+                var sceneName = mission.SceneName?.ToLowerInvariant() ?? string.Empty;
+                
+                #if DEBUG
+                Logger.LogDebug("IsSiegeSceneValid", 
+                    $"Checking scene - Mode: {mission.Mode}, " +
+                    $"Scene: {sceneName}, " +
+                    $"HasDefender: {mission.DefenderTeam != null}, " +
+                    $"HasAttacker: {mission.AttackerTeam != null}, " +
+                    $"IsSiegeBattle: {mission.IsSiegeBattle}, " +
+                    $"IsSallyOutBattle: {mission.IsSallyOutBattle}, " +
+                    $"MissionTime: {mission.CurrentTime:F2}, " +
+                    $"MissionEnded: {mission.MissionEnded}, " +
+                    $"BattleInRetreat: {mission.CheckIfBattleInRetreat()}");
+                #endif
+
+                // 允许Battle和Deployment两种模式
+                bool isValidMode = mission.Mode == MissionMode.Battle || 
+                                 mission.Mode == MissionMode.Deployment;
+
+                bool hasValidSceneName = !string.IsNullOrEmpty(sceneName) &&
+                                       (sceneName.Contains("siege") || 
+                                        sceneName.Contains("castle") ||
+                                        mission.IsSiegeBattle ||
+                                        mission.IsSallyOutBattle);
+
+                bool hasValidTeams = mission.DefenderTeam != null &&
+                                   mission.AttackerTeam != null;
+
+                bool isValidSiegeScene = isValidMode && hasValidSceneName && hasValidTeams;
+
+                #if DEBUG
+                if (!isValidSiegeScene)
+                {
+                    Logger.LogDebug("IsSiegeSceneValid", 
+                        $"Scene validation failed - ValidMode: {isValidMode}, " +
+                        $"ValidSceneName: {hasValidSceneName}, " +
+                        $"ValidTeams: {hasValidTeams}, " +
+                        $"CurrentMode: {mission.Mode}, " +
+                        $"SceneName: {sceneName}");
+                }
+                #endif
+
+                return isValidSiegeScene;
             }
-            catch
+            catch (Exception ex)
             {
+                #if DEBUG
+                Logger.LogError("IsSiegeSceneValid", ex);
+                #endif
                 return false;
             }
         }
@@ -52,10 +93,28 @@ namespace IronBloodSiege
             try
             {
                 if (team == null || !IsMissionValid()) return 0;
-                return team.ActiveAgents?.Count(a => IsValidAgent(a)) ?? 0;
+
+                var activeAgents = team.ActiveAgents;
+                if (activeAgents == null) return 0;
+
+                int totalCount = activeAgents.Count;
+                int validCount = activeAgents.Count(a => IsValidAgent(a));
+
+                #if DEBUG
+                Logger.LogDebug("GetAttackerCount", 
+                    $"Team: {team.Side}, " +
+                    $"Total agents: {totalCount}, " +
+                    $"Valid agents: {validCount}, " +
+                    $"Invalid agents: {totalCount - validCount}");
+                #endif
+
+                return validCount;
             }
-            catch
+            catch (Exception ex)
             {
+                #if DEBUG
+                Logger.LogError("GetAttackerCount", ex);
+                #endif
                 return 0;
             }
         }
@@ -67,12 +126,30 @@ namespace IronBloodSiege
         {
             try
             {
-                return agent?.IsHuman == true && 
-                       agent.IsActive() && 
-                       !agent.IsPlayerControlled;
+                if (agent == null) return false;
+
+                bool isHuman = agent.IsHuman;
+                bool isActive = agent.IsActive();
+                bool isNotPlayerControlled = !agent.IsPlayerControlled;
+                bool isValid = isHuman && isActive && isNotPlayerControlled;
+
+                #if DEBUG
+                if (!isValid)
+                {
+                    Logger.LogDebug("IsValidAgent", 
+                        $"Agent validation failed - IsHuman: {isHuman}, " +
+                        $"IsActive: {isActive}, " +
+                        $"IsNotPlayerControlled: {isNotPlayerControlled}");
+                }
+                #endif
+
+                return isValid;
             }
-            catch
+            catch (Exception ex)
             {
+                #if DEBUG
+                Logger.LogError("IsValidAgent", ex);
+                #endif
                 return false;
             }
         }
@@ -84,11 +161,28 @@ namespace IronBloodSiege
         {
             try
             {
-                return formation != null && 
-                       formation.Team == Mission.Current?.AttackerTeam;
+                if (formation == null) return false;
+                if (!IsMissionValid()) return false;
+
+                bool hasValidTeam = formation.Team == Mission.Current.AttackerTeam;
+
+                #if DEBUG
+                if (!hasValidTeam)
+                {
+                    Logger.LogDebug("IsValidFormation", 
+                        $"Formation validation failed - " +
+                        $"Formation team: {formation.Team?.Side}, " +
+                        $"Expected team: {Mission.Current?.AttackerTeam?.Side}");
+                }
+                #endif
+
+                return hasValidTeam;
             }
-            catch
+            catch (Exception ex)
             {
+                #if DEBUG
+                Logger.LogError("IsValidFormation", ex);
+                #endif
                 return false;
             }
         }

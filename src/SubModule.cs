@@ -61,6 +61,14 @@ namespace IronBloodSiege
             {
                 if (mission != null)
                 {
+                    #if DEBUG
+                    Logger.LogDebug("OnBeforeMissionBehaviorInitialize", 
+                        $"Mission Mode: {mission.Mode}, " +
+                        $"Scene Name: {mission.SceneName}, " +
+                        $"IsSiegeBattle: {mission.IsSiegeBattle}, " +
+                        $"IsSallyOutBattle: {mission.IsSallyOutBattle}");
+                    #endif
+
                     mission.AddMissionBehavior(new SiegeMoraleBehavior());
                     InformationManager.DisplayMessage(new InformationMessage(
                         new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
@@ -108,7 +116,7 @@ namespace IronBloodSiege
         private bool _isDisabled = false;
         private bool _pendingDisable = false;    // 用于标记是否处于等待禁用状态
         private float _disableTimer = 0f;        // 禁用计时器
-        private const float DISABLE_DELAY = 15f; // 禁用延迟时间（15秒）
+        private const float DISABLE_DELAY = 15f; // 禁用延迟时间
         private int _initialAttackerCount = 0;   // 开始计时时的攻击方士兵数量
         private const float MORALE_UPDATE_INTERVAL = 0.5f;
         private float _lastMoraleUpdateTime = 0f;
@@ -211,20 +219,38 @@ namespace IronBloodSiege
                 if (_isDisabled || !SafetyChecks.IsMissionValid() || attackerTeam == null)
                     return true;
 
+                #if DEBUG
+                Logger.LogDebug("ShouldAllowRetreat", $"Checking retreat conditions - AttackerCount: {attackerCount}, " +
+                    $"EnableFixedRetreat: {Settings.Instance.EnableFixedRetreat}, RetreatThreshold: {Settings.Instance.RetreatThreshold}, " +
+                    $"EnableRatioRetreat: {Settings.Instance.EnableRatioRetreat}");
+                #endif
+
                 // 优先使用固定数量触发
                 if (Settings.Instance.EnableFixedRetreat)
                 {
-                    if (attackerCount <= Settings.Instance.RetreatThreshold)
+                    bool shouldRetreat = attackerCount <= Settings.Instance.RetreatThreshold;
+                    #if DEBUG
+                    Logger.LogDebug("ShouldAllowRetreat", $"Fixed threshold check - AttackerCount: {attackerCount} <= Threshold: {Settings.Instance.RetreatThreshold} = {shouldRetreat}");
+                    #endif
+                    
+                    if (shouldRetreat)
                     {
                         StartDisableTimer("Fixed threshold reached");
                         return true;
                     }
                 }
                 // 如果没有启用固定数量，才检查比例触发
-                else if (Settings.Instance.EnableRatioRetreat)
+                else if (Settings.Instance.EnableRatioRetreat && _defenderTeam != null)
                 {
-                    int defenderCount = SafetyChecks.GetAttackerCount(Mission.Current.DefenderTeam);
-                    if (defenderCount > 0 && attackerCount < defenderCount * 0.7f)
+                    int defenderCount = SafetyChecks.GetAttackerCount(_defenderTeam);
+                    bool shouldRetreat = defenderCount > 0 && attackerCount < defenderCount * 0.7f;
+                    
+                    #if DEBUG
+                    Logger.LogDebug("ShouldAllowRetreat", $"Ratio threshold check - AttackerCount: {attackerCount}, DefenderCount: {defenderCount}, " +
+                        $"Ratio: {(defenderCount > 0 ? (float)attackerCount / defenderCount : 0):F2}, ShouldRetreat: {shouldRetreat}");
+                    #endif
+                    
+                    if (shouldRetreat)
                     {
                         StartDisableTimer("Ratio threshold reached");
                         return true;
@@ -232,8 +258,14 @@ namespace IronBloodSiege
                 }
 
                 // 如果条件不满足，取消待禁用状态
-                _pendingDisable = false;
-                _disableTimer = 0f;
+                if (_pendingDisable)
+                {
+                    #if DEBUG
+                    Logger.LogDebug("ShouldAllowRetreat", "Cancelling pending disable state");
+                    #endif
+                    _pendingDisable = false;
+                    _disableTimer = 0f;
+                }
                 return false;
             }
             catch (Exception ex)
@@ -249,10 +281,27 @@ namespace IronBloodSiege
             {
                 if (!_pendingDisable && SafetyChecks.IsMissionValid())
                 {
+                    #if DEBUG
+                    Logger.LogDebug("StartDisableTimer", $"Starting disable timer with reason: {reason}");
+                    #endif
+                    
                     _pendingDisable = true;
                     _disableTimer = 0f;
                     _initialAttackerCount = SafetyChecks.GetAttackerCount(Mission.Current.AttackerTeam);
-                    ShowRetreatMessage(reason);
+                    
+                    // 确保消息显示
+                    if (Mission.Current.CurrentTime - _lastRetreatMessageTime >= RETREAT_MESSAGE_COOLDOWN)
+                    {
+                        _lastRetreatMessageTime = Mission.Current.CurrentTime;
+                        var message = new TextObject("{=ibs_retreat_message}IronBlood Siege: Insufficient attacking forces, iron will disabled");
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            message.ToString(),
+                            Color.FromUint(0xFFFF00FF)));
+                        
+                        #if DEBUG
+                        Logger.LogDebug("StartDisableTimer", "Retreat message displayed");
+                        #endif
+                    }
                 }
             }
             catch (Exception ex)
@@ -270,8 +319,9 @@ namespace IronBloodSiege
                 if (Mission.Current.CurrentTime - _lastRetreatMessageTime >= RETREAT_MESSAGE_COOLDOWN)
                 {
                     _lastRetreatMessageTime = Mission.Current.CurrentTime;
+                    var message = new TextObject("{=ibs_retreat_message}IronBlood Siege: Insufficient attacking forces, iron will disabled");
                     InformationManager.DisplayMessage(new InformationMessage(
-                        new TextObject("{=ibs_retreat_message}IronBlood Siege: Insufficient attacking forces, iron will disabled").ToString(),
+                        message.ToString(),
                         Color.FromUint(0xFFFF00FF)));
                 }
             }
@@ -359,54 +409,69 @@ namespace IronBloodSiege
                 // 计算当前攻城方人数
                 int attackerCount = SafetyChecks.GetAttackerCount(team);
                 
+                #if DEBUG
+                Logger.LogDebug("AdjustTeamMorale", $"Current attacker count: {attackerCount}");
+                #endif
+
+                // 检查是否应该允许撤退
                 if (ShouldAllowRetreat(team, attackerCount))
                 {
-                    if (currentTime - _lastRetreatMessageTime >= RETREAT_MESSAGE_COOLDOWN)
-                    {
-                        _lastRetreatMessageTime = currentTime;
-                        ShowRetreatMessage("Low attacker count");
-                    }
-                    RestoreAllFormations();
+                    #if DEBUG
+                    Logger.LogDebug("AdjustTeamMorale", "Retreat conditions met, skipping morale adjustment");
+                    #endif
                     return;
                 }
-                
-                // 使用预先计算的值
-                int defenderCount = SafetyChecks.GetAttackerCount(_defenderTeam);
-                float strengthRatio = defenderCount > 0 ? (float)attackerCount / defenderCount : 2.0f;
-                
+
+                // 计算战场优势比率
+                float strengthRatio = 2.0f;
+                if (_defenderTeam != null)
+                {
+                    int defenderCount = SafetyChecks.GetAttackerCount(_defenderTeam);
+                    if (defenderCount > 0)
+                    {
+                        strengthRatio = (float)attackerCount / defenderCount;
+                    }
+                }
+
+                // 根据优势情况调整士气阈值
                 if (strengthRatio >= 1.5f)
                 {
                     moraleThreshold *= 0.6f;
                 }
 
-                // 使用ToList()创建快照，避免在迭代时修改集合
-                var agentsToUpdate = team.ActiveAgents
-                    .Where(agent => SafetyChecks.IsValidAgent(agent) && 
-                                   (agent.GetMorale() < moraleThreshold || agent.IsRetreating()))
-                    .ToList();
-
-                int boostedCount = ProcessAgentMorale(agentsToUpdate, moraleThreshold, moraleBoostRate);
-
-                // 显示消息
+                // 更新士兵士气
+                int boostedCount = UpdateAgentsMorale(team, moraleThreshold, moraleBoostRate);
+                
+                // 显示鼓舞消息
                 if (boostedCount >= 10 && currentTime - _lastMessageTime >= MESSAGE_COOLDOWN)
                 {
                     _lastMessageTime = currentTime;
-                    MoraleBoostMessage.SetTextVariable("COUNT", boostedCount);
+                    var message = new TextObject("{=ibs_morale_boost}IronBlood Siege: {COUNT} troops were inspired")
+                        .SetTextVariable("COUNT", boostedCount);
                     InformationManager.DisplayMessage(new InformationMessage(
-                        MoraleBoostMessage.ToString(),
-                        WarningColor));
+                        message.ToString(),
+                        Color.FromUint(0xFFFF00FF)));
+                    
+                    #if DEBUG
+                    Logger.LogDebug("AdjustTeamMorale", $"Displayed morale boost message for {boostedCount} troops");
+                    #endif
                 }
             }
             catch (Exception ex)
             {
-                HandleError("team morale adjustment", ex);
+                HandleError("adjust team morale", ex);
             }
         }
 
-        private int ProcessAgentMorale(List<Agent> agents, float moraleThreshold, float moraleBoostRate)
+        private int UpdateAgentsMorale(Team team, float moraleThreshold, float moraleBoostRate)
         {
             int boostedCount = 0;
-            foreach (Agent agent in agents)
+            var agentsToUpdate = team.ActiveAgents
+                .Where(agent => SafetyChecks.IsValidAgent(agent) && 
+                               (agent.GetMorale() < moraleThreshold || agent.IsRetreating()))
+                .ToList();
+
+            foreach (Agent agent in agentsToUpdate)
             {
                 try
                 {
@@ -547,6 +612,21 @@ namespace IronBloodSiege
                 bool previousSceneState = _isSiegeScene;
                 _isSiegeScene = SafetyChecks.IsSiegeSceneValid();
                 
+                #if DEBUG
+                // 每10秒记录一次当前状态
+                if (Mission.Current.CurrentTime % 10 < 0.1f)
+                {
+                    Logger.LogDebug("MissionTick", $"Scene state - IsSiege: {_isSiegeScene}, IsEnabled: {Settings.Instance.IsEnabled}, " +
+                        $"EnableFixedRetreat: {Settings.Instance.EnableFixedRetreat}, RetreatThreshold: {Settings.Instance.RetreatThreshold}");
+                    
+                    if (_attackerTeam != null)
+                    {
+                        int currentAttackerCount = SafetyChecks.GetAttackerCount(_attackerTeam);
+                        Logger.LogDebug("MissionTick", $"Current attacker count: {currentAttackerCount}");
+                    }
+                }
+                #endif
+                
                 if (previousSceneState && !_isSiegeScene)
                 {
                     DisableMod("Siege scene ended");
@@ -581,7 +661,7 @@ namespace IronBloodSiege
             try
             {
                 _disableTimer += dt;
-                if (_disableTimer >= DISABLE_DELAY)  // 使用DISABLE_DELAY常量
+                if (_disableTimer >= DISABLE_DELAY)
                 {
                     // 获取当前攻击方士兵数量
                     int currentAttackerCount = SafetyChecks.GetAttackerCount(Mission.Current.AttackerTeam);
@@ -593,9 +673,9 @@ namespace IronBloodSiege
                         _disableTimer = 0f;
                         
                         // 援兵到达的消息显示
-                        GameTexts.SetVariable("MESSAGE", new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!"));
+                        var message = new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!");
                         InformationManager.DisplayMessage(new InformationMessage(
-                            GameTexts.GetVariable("MESSAGE").ToString(),
+                            message.ToString(),
                             InfoColor));
                         return;
                     }
@@ -620,9 +700,9 @@ namespace IronBloodSiege
                         _disableTimer = 0f;
                         
                         // 添加援兵到达的消息显示
-                        GameTexts.SetVariable("MESSAGE", new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!"));
+                        var message = new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!");
                         InformationManager.DisplayMessage(new InformationMessage(
-                            GameTexts.GetVariable("MESSAGE").ToString(),
+                            message.ToString(),
                             InfoColor));
                     }
                 }
@@ -632,28 +712,6 @@ namespace IronBloodSiege
                 HandleError("process disable timer", ex);
                 _pendingDisable = false;
                 _disableTimer = 0f;
-            }
-        }
-
-        public override void OnEndMissionInternal()
-        {
-            try 
-            {
-                if (!_missionEnding)
-                {
-                    #if DEBUG
-                    Logger.LogDebug("OnEndMissionInternal", "Mission ending started");
-                    #endif
-                    _missionEnding = true;
-                    DisableMod("Mission ending");
-                }
-                base.OnEndMissionInternal();
-            }
-            catch (Exception ex)
-            {
-                #if DEBUG
-                Logger.LogError("OnEndMissionInternal", ex);
-                #endif
             }
         }
 
@@ -676,83 +734,6 @@ namespace IronBloodSiege
                 #if DEBUG
                 Logger.LogError("OnClearScene", ex);
                 #endif
-            }
-        }
-
-        public override void OnRemoveBehavior()
-        {
-            try
-            {
-                if (_isBeingRemoved)
-                {
-                    #if DEBUG
-                    Logger.LogDebug("OnRemoveBehavior", "Skipped duplicate removal");
-                    #endif
-                    return;
-                }
-
-                _isBeingRemoved = true;
-                _missionEnding = true;
-                _isDisabled = true;
-                
-                #if DEBUG
-                Logger.LogDebug("OnRemoveBehavior", "Starting cleanup");
-                #endif
-                
-                try
-                {
-                    if (_chargedFormations != null)
-                    {
-                        _chargedFormations.Clear();
-                        _chargedFormations = null;
-                    }
-
-                    // Reset all state variables
-                    _isSiegeScene = false;
-                    _lastMoraleUpdateTime = 0f;
-                    _lastMessageTime = 0f;
-                    _lastRetreatMessageTime = 0f;
-                    _initialAttackerCount = 0;
-                    _pendingDisable = false;
-                    _disableTimer = 0f;
-                    
-                    // Clear cached references
-                    _currentMission = null;
-                    _attackerTeam = null;
-                    _defenderTeam = null;
-                    _currentSceneName = null;
-
-                    #if DEBUG
-                    Logger.LogDebug("OnRemoveBehavior", "Cleanup completed");
-                    #endif
-                }
-                catch (Exception ex)
-                {
-                    #if DEBUG
-                    Logger.LogError("OnRemoveBehavior cleanup", ex);
-                    #endif
-                }
-                finally
-                {
-                    try
-                    {
-                        base.OnRemoveBehavior();
-                    }
-                    catch (Exception ex)
-                    {
-                        #if DEBUG
-                        Logger.LogError("base OnRemoveBehavior", ex);
-                        #endif
-                    }
-                    _isBeingRemoved = false;
-                }
-            }
-            catch (Exception ex)
-            {
-                #if DEBUG
-                Logger.LogError("OnRemoveBehavior outer", ex);
-                #endif
-                _isBeingRemoved = false;
             }
         }
 
@@ -786,6 +767,177 @@ namespace IronBloodSiege
                 {
                     // 完全忽略
                 }
+                #endif
+            }
+        }
+
+        protected override void OnEndMission()
+        {
+            try
+            {
+                if (!_missionEnding)
+                {
+                    #if DEBUG
+                    Logger.LogDebug("OnEndMission", "Mission ending started");
+                    #endif
+                    _missionEnding = true;
+                    _isDisabled = true;
+
+                    // 立即清理所有资源
+                    CleanupResources();
+                }
+                
+                base.OnEndMission();
+            }
+            catch (Exception ex)
+            {
+                #if DEBUG
+                Logger.LogError("OnEndMission", ex);
+                #endif
+            }
+        }
+
+        public override void OnEndMissionInternal()
+        {
+            try
+            {
+                #if DEBUG
+                Logger.LogDebug("OnEndMissionInternal", "Mission ending internal started");
+                #endif
+
+                // 确保资源已被清理
+                if (!_missionEnding)
+                {
+                    _missionEnding = true;
+                    _isDisabled = true;
+                    CleanupResources();
+                }
+
+                base.OnEndMissionInternal();
+            }
+            catch (Exception ex)
+            {
+                #if DEBUG
+                Logger.LogError("OnEndMissionInternal", ex);
+                #endif
+            }
+        }
+
+        public override void OnRemoveBehavior()
+        {
+            try
+            {
+                if (_isBeingRemoved)
+                {
+                    #if DEBUG
+                    Logger.LogDebug("OnRemoveBehavior", "Skipping duplicate removal");
+                    #endif
+                    return;
+                }
+
+                _isBeingRemoved = true;
+                
+                #if DEBUG
+                Logger.LogDebug("OnRemoveBehavior", "Starting behavior removal");
+                #endif
+
+                try
+                {
+                    // 确保资源已被清理
+                    if (!_missionEnding)
+                    {
+                        _missionEnding = true;
+                        _isDisabled = true;
+                        CleanupResources();
+                    }
+
+                    base.OnRemoveBehavior();
+                }
+                catch (Exception ex)
+                {
+                    #if DEBUG
+                    Logger.LogError("OnRemoveBehavior inner", ex);
+                    #endif
+                }
+            }
+            catch (Exception ex)
+            {
+                #if DEBUG
+                Logger.LogError("OnRemoveBehavior outer", ex);
+                #endif
+            }
+            finally
+            {
+                _isBeingRemoved = false;
+            }
+        }
+
+        private void CleanupResources()
+        {
+            try
+            {
+                #if DEBUG
+                Logger.LogDebug("CleanupResources", "Starting resource cleanup");
+                #endif
+
+                // 确保所有状态标记都被正确设置
+                _isDisabled = true;
+                _pendingDisable = false;
+                _disableTimer = 0f;
+                _isSiegeScene = false;
+
+                // 清理Formation相关资源
+                if (_chargedFormations != null)
+                {
+                    try
+                    {
+                        var formationsToRestore = _chargedFormations.ToList();
+                        foreach (var formation in formationsToRestore)
+                        {
+                            try
+                            {
+                                if (formation != null)
+                                {
+                                    formation.SetMovementOrder(MovementOrder.MovementOrderStop);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                #if DEBUG
+                                Logger.LogError("CleanupResources formation", ex);
+                                #endif
+                            }
+                        }
+                        _chargedFormations.Clear();
+                    }
+                    catch (Exception ex)
+                    {
+                        #if DEBUG
+                        Logger.LogError("CleanupResources formations", ex);
+                        #endif
+                    }
+                }
+
+                // 重置所有计时器和状态变量
+                _lastMoraleUpdateTime = 0f;
+                _lastMessageTime = 0f;
+                _lastRetreatMessageTime = 0f;
+                _initialAttackerCount = 0;
+
+                // 清理引用
+                _currentMission = null;
+                _attackerTeam = null;
+                _defenderTeam = null;
+                _currentSceneName = null;
+
+                #if DEBUG
+                Logger.LogDebug("CleanupResources", "Resource cleanup completed");
+                #endif
+            }
+            catch (Exception ex)
+            {
+                #if DEBUG
+                Logger.LogError("CleanupResources", ex);
                 #endif
             }
         }

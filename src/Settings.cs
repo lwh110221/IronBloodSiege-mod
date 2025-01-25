@@ -47,7 +47,7 @@ namespace IronBloodSiege
         public Settings()
         {
             IsEnabled = true;
-            EnableFixedRetreat = false;
+            EnableFixedRetreat = true;
             RetreatThreshold = 100;
             EnableRatioRetreat = false;
             MoraleThreshold = 70f;

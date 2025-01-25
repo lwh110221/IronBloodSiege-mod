@@ -126,6 +126,8 @@ namespace IronBloodSiege
         private float _lastRetreatMessageTime = 0f;
         private bool _isBeingRemoved = false;  // 添加标记，防止重复执行
         private bool _missionEnding = false;
+        private bool _isCleanedUp = false;  // 添加标记，确保只清理一次
+        private readonly object _cleanupLock = new object();  // 添加锁，确保线程安全
 
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
 
@@ -608,29 +610,32 @@ namespace IronBloodSiege
                     return;
                 }
 
-                // 更新场景状态
-                bool previousSceneState = _isSiegeScene;
-                _isSiegeScene = SafetyChecks.IsSiegeSceneValid();
-                
-                #if DEBUG
-                // 每10秒记录一次当前状态
-                if (Mission.Current.CurrentTime % 10 < 0.1f)
+                // 每0.5秒才检查一次场景状态
+                if (_currentMission.CurrentTime % 0.5f < dt)
                 {
-                    Logger.LogDebug("MissionTick", $"Scene state - IsSiege: {_isSiegeScene}, IsEnabled: {Settings.Instance.IsEnabled}, " +
-                        $"EnableFixedRetreat: {Settings.Instance.EnableFixedRetreat}, RetreatThreshold: {Settings.Instance.RetreatThreshold}");
+                    bool previousSceneState = _isSiegeScene;
+                    _isSiegeScene = SafetyChecks.IsSiegeSceneValid();
                     
-                    if (_attackerTeam != null)
+                    #if DEBUG
+                    // 每10秒记录一次当前状态
+                    if (_currentMission.CurrentTime % 10 < dt)
                     {
-                        int currentAttackerCount = SafetyChecks.GetAttackerCount(_attackerTeam);
-                        Logger.LogDebug("MissionTick", $"Current attacker count: {currentAttackerCount}");
+                        Logger.LogDebug("MissionTick", $"Scene state - IsSiege: {_isSiegeScene}, IsEnabled: {Settings.Instance.IsEnabled}, " +
+                            $"EnableFixedRetreat: {Settings.Instance.EnableFixedRetreat}, RetreatThreshold: {Settings.Instance.RetreatThreshold}");
+                        
+                        if (_attackerTeam != null)
+                        {
+                            int currentAttackerCount = SafetyChecks.GetAttackerCount(_attackerTeam);
+                            Logger.LogDebug("MissionTick", $"Current attacker count: {currentAttackerCount}");
+                        }
                     }
-                }
-                #endif
-                
-                if (previousSceneState && !_isSiegeScene)
-                {
-                    DisableMod("Siege scene ended");
-                    return;
+                    #endif
+                    
+                    if (previousSceneState && !_isSiegeScene)
+                    {
+                        DisableMod("Siege scene ended");
+                        return;
+                    }
                 }
                 
                 if (!_isSiegeScene)
@@ -784,7 +789,14 @@ namespace IronBloodSiege
                     _isDisabled = true;
 
                     // 立即清理所有资源
-                    CleanupResources();
+                    lock (_cleanupLock)
+                    {
+                        if (!_isCleanedUp)
+                        {
+                            SafeCleanupResources();
+                            _isCleanedUp = true;
+                        }
+                    }
                 }
                 
                 base.OnEndMission();
@@ -805,12 +817,16 @@ namespace IronBloodSiege
                 Logger.LogDebug("OnEndMissionInternal", "Mission ending internal started");
                 #endif
 
-                // 确保资源已被清理
-                if (!_missionEnding)
+                // 使用锁确保线程安全
+                lock (_cleanupLock)
                 {
-                    _missionEnding = true;
-                    _isDisabled = true;
-                    CleanupResources();
+                    if (!_isCleanedUp)
+                    {
+                        _missionEnding = true;
+                        _isDisabled = true;
+                        SafeCleanupResources();
+                        _isCleanedUp = true;
+                    }
                 }
 
                 base.OnEndMissionInternal();
@@ -843,12 +859,16 @@ namespace IronBloodSiege
 
                 try
                 {
-                    // 确保资源已被清理
-                    if (!_missionEnding)
+                    // 使用锁确保线程安全
+                    lock (_cleanupLock)
                     {
-                        _missionEnding = true;
-                        _isDisabled = true;
-                        CleanupResources();
+                        if (!_isCleanedUp)
+                        {
+                            _missionEnding = true;
+                            _isDisabled = true;
+                            SafeCleanupResources();
+                            _isCleanedUp = true;
+                        }
                     }
 
                     base.OnRemoveBehavior();
@@ -872,12 +892,12 @@ namespace IronBloodSiege
             }
         }
 
-        private void CleanupResources()
+        private void SafeCleanupResources()
         {
             try
             {
                 #if DEBUG
-                Logger.LogDebug("CleanupResources", "Starting resource cleanup");
+                Logger.LogDebug("SafeCleanupResources", "Starting safe resource cleanup");
                 #endif
 
                 // 确保所有状态标记都被正确设置
@@ -886,7 +906,7 @@ namespace IronBloodSiege
                 _disableTimer = 0f;
                 _isSiegeScene = false;
 
-                // 清理Formation相关资源
+                // 安全清理Formation相关资源
                 if (_chargedFormations != null)
                 {
                     try
@@ -896,7 +916,7 @@ namespace IronBloodSiege
                         {
                             try
                             {
-                                if (formation != null)
+                                if (formation != null && SafetyChecks.IsValidFormation(formation))
                                 {
                                     formation.SetMovementOrder(MovementOrder.MovementOrderStop);
                                 }
@@ -904,7 +924,7 @@ namespace IronBloodSiege
                             catch (Exception ex)
                             {
                                 #if DEBUG
-                                Logger.LogError("CleanupResources formation", ex);
+                                Logger.LogError("SafeCleanupResources formation", ex);
                                 #endif
                             }
                         }
@@ -913,7 +933,7 @@ namespace IronBloodSiege
                     catch (Exception ex)
                     {
                         #if DEBUG
-                        Logger.LogError("CleanupResources formations", ex);
+                        Logger.LogError("SafeCleanupResources formations", ex);
                         #endif
                     }
                 }
@@ -931,13 +951,13 @@ namespace IronBloodSiege
                 _currentSceneName = null;
 
                 #if DEBUG
-                Logger.LogDebug("CleanupResources", "Resource cleanup completed");
+                Logger.LogDebug("SafeCleanupResources", "Safe resource cleanup completed");
                 #endif
             }
             catch (Exception ex)
             {
                 #if DEBUG
-                Logger.LogError("CleanupResources", ex);
+                Logger.LogError("SafeCleanupResources", ex);
                 #endif
             }
         }

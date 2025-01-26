@@ -70,9 +70,18 @@ namespace IronBloodSiege
                     #endif
 
                     mission.AddMissionBehavior(new SiegeMoraleBehavior());
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
-                        Color.FromUint(0x00FF00FF)));
+                    if (Settings.Instance.IsEnabled)
+                    {
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
+                            Color.FromUint(0x00FF00FF)));
+                    }
+                    else 
+                    {
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            new TextObject("{=ibs_mod_disabled}IronBlood Siege is disabled").ToString(), 
+                            Color.FromUint(0xFF0000FF)));
+                    }
                 }
             }
             catch (Exception ex)
@@ -116,7 +125,7 @@ namespace IronBloodSiege
         private bool _isDisabled = false;
         private bool _pendingDisable = false;    // 用于标记是否处于等待禁用状态
         private float _disableTimer = 0f;        // 禁用计时器
-        private const float DISABLE_DELAY = 15f; // 禁用延迟时间
+        //private const float DISABLE_DELAY = 15f; // 禁用延迟时间
         private int _initialAttackerCount = 0;   // 开始计时时的攻击方士兵数量
         private const float MORALE_UPDATE_INTERVAL = 0.5f;
         private float _lastMoraleUpdateTime = 0f;
@@ -127,7 +136,9 @@ namespace IronBloodSiege
         private bool _isBeingRemoved = false;  // 添加标记，防止重复执行
         private bool _missionEnding = false;
         private bool _isCleanedUp = false;  // 添加标记，确保只清理一次
-        private readonly object _cleanupLock = new object();  // 添加锁，确保线程安全
+        private readonly object _cleanupLock = new object();  // 线程锁
+        private const float BATTLE_START_GRACE_PERIOD = 30f;  // 援兵消息30秒缓冲
+        private float _battleStartTime = 0f;
 
         public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
 
@@ -136,6 +147,9 @@ namespace IronBloodSiege
             base.OnBehaviorInitialize();
             try
             {
+                // 记录战斗开始时间
+                _battleStartTime = Mission.Current?.CurrentTime ?? 0f;
+                
                 // 重置状态
                 ResetState();
                 
@@ -666,7 +680,8 @@ namespace IronBloodSiege
             try
             {
                 _disableTimer += dt;
-                if (_disableTimer >= DISABLE_DELAY)
+               //if (_disableTimer >= DISABLE_DELAY)
+                if (_disableTimer >= Settings.Instance.DisableDelay)
                 {
                     // 获取当前攻击方士兵数量
                     int currentAttackerCount = SafetyChecks.GetAttackerCount(Mission.Current.AttackerTeam);
@@ -677,11 +692,15 @@ namespace IronBloodSiege
                         _pendingDisable = false;
                         _disableTimer = 0f;
                         
-                        // 援兵到达的消息显示
-                        var message = new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!");
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            message.ToString(),
-                            InfoColor));
+                        // 只在战斗开始一定时间后才显示援兵消息
+                        if (Mission.Current.CurrentTime - _battleStartTime > BATTLE_START_GRACE_PERIOD)
+                        {
+                            // 援兵到达的消息显示
+                            var message = new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!");
+                            InformationManager.DisplayMessage(new InformationMessage(
+                                message.ToString(),
+                                InfoColor));
+                        }
                         return;
                     }
 
@@ -704,11 +723,15 @@ namespace IronBloodSiege
                         _pendingDisable = false;
                         _disableTimer = 0f;
                         
-                        // 添加援兵到达的消息显示
-                        var message = new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!");
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            message.ToString(),
-                            InfoColor));
+                        // 只在战斗开始一定时间后才显示援兵消息
+                        if (Mission.Current.CurrentTime - _battleStartTime > BATTLE_START_GRACE_PERIOD)
+                        {
+                            // 添加援兵到达的消息显示
+                            var message = new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!");
+                            InformationManager.DisplayMessage(new InformationMessage(
+                                message.ToString(),
+                                InfoColor));
+                        }
                     }
                 }
             }

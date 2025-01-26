@@ -44,6 +44,11 @@ namespace IronBloodSiege
         [SettingPropertyGroup("{=ibs_combat_settings}Combat Settings", GroupOrder = 2)]
         public float MoraleBoostRate { get; set; } = 15f;
 
+        [SettingPropertyFloatingInteger("{=ibs_disable_delay}Iron Will Waiting Time for Reinforcements", 5f, 30f, "0", RequireRestart = false, 
+            HintText = "{=ibs_disable_delay_hint}The delay time from triggering the loss of Iron Will state to actually disabling the Iron Will effect. If no reinforcements arrive during this time, siege troops will completely lose their Iron Will state (seconds). Default: 20", Order = 2)]
+        [SettingPropertyGroup("{=ibs_combat_settings}Combat Settings", GroupOrder = 2)]
+        public float DisableDelay { get; set; } = 20f;
+
         public Settings()
         {
             IsEnabled = true;
@@ -52,6 +57,7 @@ namespace IronBloodSiege
             EnableRatioRetreat = false;
             MoraleThreshold = 70f;
             MoraleBoostRate = 15f;
+            DisableDelay = 20f;
         }
     }
 } 

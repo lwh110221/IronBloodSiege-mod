@@ -9,7 +9,7 @@
     <string id="ibs_mod_email" text="email: ahao221x@gmail.com"/>
     <string id="ibs_mod_name" text="IronBlood Siege"/>
     <string id="ibs_mod_enabled" text="IronBlood Siege is enabled"/>
-    
+    <string id="ibs_mod_disabled" text="IronBlood Siege is disabled"/>
     <!-- 设置 -->
     <string id="ibs_settings_basic" text="Basic Settings"/>
     <string id="ibs_enable_mod" text="Enable Mod"/>
@@ -30,11 +30,13 @@
     <string id="ibs_morale_threshold_hint" text="Morale will be boosted when troops fall below this value. Default: 70"/>
     <string id="ibs_morale_boost_rate" text="Morale Boost Rate"/>
     <string id="ibs_morale_boost_rate_hint" text="Amount of morale boost per update. Default: 15"/>
+    <string id="ibs_disable_delay" text="Iron Will Waiting Time for Reinforcements"/>
+    <string id="ibs_disable_delay_hint" text="The delay time from triggering the loss of Iron Will state to actually disabling the Iron Will effect. If no reinforcements arrive during this time, siege troops will completely lose their Iron Will state (seconds). Default: 15"/>
     
     <!-- 消息 -->
     <string id="ibs_prevent_retreat" text="IronBlood Siege: Prevented troops from retreating!"/>
     <string id="ibs_morale_boost" text="IronBlood Siege: {COUNT} troops were inspired"/>
-    <string id="ibs_retreat_message" text="IronBlood Siege: Insufficient attacking forces, iron will disabled"/>
+    <string id="ibs_retreat_message" text="Iron Blood Siege: Insufficient number of siege troops, Iron Blood attack will be abandoned soon" />
     <string id="ibs_reinforcement_message" text="IronBlood Siege: Reinforcements have arrived, iron will attack resumed!"/>
     
     <!-- 错误消息 -->

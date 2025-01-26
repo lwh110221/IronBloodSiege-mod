@@ -2,7 +2,8 @@
 <Module>
     <Name value="IronBloodSiege-Ahao"/>
     <Id value="IronBloodSiege"/>
-    <Version value="v1.0.0"/>
+    <Version value="v1.0.5"/>
+    <url value="https://github.com/lwh110221/IronBloodSiege-mod"/>
     <SingleplayerModule value="true"/>
     <MultiplayerModule value="false"/>
     <DependedModules>

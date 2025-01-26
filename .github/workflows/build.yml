@@ -26,50 +26,41 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
       
-    - name: Build
+    - name: Build Release Version
       run: |
         msbuild /p:Configuration=Release /p:Platform=AnyCPU
         
-    - name: Debug Output
+    - name: Build Debug Version
       run: |
-        echo "Listing directory contents:"
-        dir
-        echo "Listing bin directory contents:"
-        dir bin
-        echo "Listing Release directory contents:"
-        dir bin\Release
+        msbuild /p:Configuration=Debug /p:Platform=AnyCPU
         
-    - name: Create Mod Structure
+    - name: Create Release Version
       run: |
         mkdir -p IronBloodSiege\bin\Win64_Shipping_Client
-        # 复制DLL文件
         copy "bin\Release\IronBloodSiege.dll" "IronBloodSiege\bin\Win64_Shipping_Client\"
+        copy "bin\Release\IronBloodSiege.pdb" "IronBloodSiege\bin\Win64_Shipping_Client\"
         copy "SubModule.xml" "IronBloodSiege\"
-        # 复制本地化文件
         xcopy /E /I "ModuleData" "IronBloodSiege\ModuleData"
-        
-    - name: Create Release ZIP
-      run: |
         Compress-Archive -Path IronBloodSiege -DestinationPath IronBloodSiege.zip -Force
+        
+    - name: Create Debug Version
+      run: |
+        mkdir -p IronBloodSiege_Debug\bin\Win64_Shipping_Client
+        copy "bin\Debug\IronBloodSiege.dll" "IronBloodSiege_Debug\bin\Win64_Shipping_Client\"
+        copy "bin\Debug\IronBloodSiege.pdb" "IronBloodSiege_Debug\bin\Win64_Shipping_Client\"
+        copy "SubModule.xml" "IronBloodSiege_Debug\"
+        xcopy /E /I "ModuleData" "IronBloodSiege_Debug\ModuleData"
+        Compress-Archive -Path IronBloodSiege_Debug -DestinationPath IronBloodSiege_Debug.zip -Force
       
     - name: Create Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: IronBloodSiege.zip
+        files: |
+          IronBloodSiege.zip
+          IronBloodSiege_Debug.zip
         name: 铁血攻城 ${{ github.ref_name }}
-        body: |
-          铁血攻城 Mod ${{ github.ref_name }}
-          
-          ## 更新内容
-          - 添加本地化组件 TaleWorlds.Localization支持
-          - 添加英文本地化
-          - 自动构建发布
-          
-          ## 安装说明
-          1. 下载mod： IronBloodSiege.zip 压缩包
-          2. 整个mod文件夹解压到游戏的 Modules 目录
-          3. 启动游戏，在启动器中启用该 Mod
+        body_path: CHANGELOG.md
         draft: false
         prerelease: false
       env:

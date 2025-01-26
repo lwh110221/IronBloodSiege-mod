@@ -14,7 +14,7 @@ namespace IronBloodSiege
         {
             try
             {
-                return Mission.Current != null;
+                return Mission.Current != null && !Mission.Current.IsMissionEnding;
             }
             catch
             {
@@ -76,11 +76,8 @@ namespace IronBloodSiege
 
                 return isValidSiegeScene;
             }
-            catch (Exception ex)
+            catch
             {
-                #if DEBUG
-                Logger.LogError("IsSiegeSceneValid", ex);
-                #endif
                 return false;
             }
         }
@@ -110,11 +107,8 @@ namespace IronBloodSiege
 
                 return validCount;
             }
-            catch (Exception ex)
+            catch
             {
-                #if DEBUG
-                Logger.LogError("GetAttackerCount", ex);
-                #endif
                 return 0;
             }
         }
@@ -145,11 +139,8 @@ namespace IronBloodSiege
 
                 return isValid;
             }
-            catch (Exception ex)
+            catch
             {
-                #if DEBUG
-                Logger.LogError("IsValidAgent", ex);
-                #endif
                 return false;
             }
         }
@@ -178,11 +169,8 @@ namespace IronBloodSiege
 
                 return hasValidTeam;
             }
-            catch (Exception ex)
+            catch
             {
-                #if DEBUG
-                Logger.LogError("IsValidFormation", ex);
-                #endif
                 return false;
             }
         }
@@ -200,7 +188,7 @@ namespace IronBloodSiege
             }
             catch
             {
-                return true; // 出错时当作战斗已结束处理
+                return false;
             }
         }
     }

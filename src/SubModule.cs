@@ -712,9 +712,8 @@ namespace IronBloodSiege
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                HandleError("process disable timer", ex);
                 _pendingDisable = false;
                 _disableTimer = 0f;
             }
@@ -734,10 +733,10 @@ namespace IronBloodSiege
                 }
                 base.OnClearScene();
             }
-            catch (Exception ex)
+            catch
             {
                 #if DEBUG
-                Logger.LogError("OnClearScene", ex);
+                Logger.LogDebug("OnClearScene", "Error during scene clearing");
                 #endif
             }
         }
@@ -780,31 +779,83 @@ namespace IronBloodSiege
         {
             try
             {
-                if (!_missionEnding)
-                {
-                    #if DEBUG
-                    Logger.LogDebug("OnEndMission", "Mission ending started");
-                    #endif
-                    _missionEnding = true;
-                    _isDisabled = true;
+                #if DEBUG
+                Logger.LogDebug("OnEndMission", "Starting mission end cleanup");
+                #endif
 
-                    // 立即清理所有资源
-                    lock (_cleanupLock)
+                // 立即标记状态，防止其他方法继续执行
+                _missionEnding = true;
+                _isDisabled = true;
+
+                // 安全地清理Formation
+                if (_chargedFormations != null)
+                {
+                    try
                     {
-                        if (!_isCleanedUp)
+                        foreach (var formation in _chargedFormations.ToList())
                         {
-                            SafeCleanupResources();
-                            _isCleanedUp = true;
+                            if (formation != null)
+                            {
+                                try
+                                {
+                                    formation.SetMovementOrder(MovementOrder.MovementOrderStop);
+                                }
+                                catch
+                                {
+                                    // 忽略单个Formation的错误
+                                }
+                            }
                         }
                     }
+                    catch
+                    {
+                        // 忽略Formation清理的错误
+                    }
+                    finally
+                    {
+                        _chargedFormations.Clear();
+                        _chargedFormations = null;  // 立即释放引用
+                    }
                 }
-                
+
+                // 重置所有状态
+                _pendingDisable = false;
+                _disableTimer = 0f;
+                _isSiegeScene = false;
+                _initialAttackerCount = 0;
+                _lastMoraleUpdateTime = 0f;
+                _lastMessageTime = 0f;
+                _lastRetreatMessageTime = 0f;
+
+                // 清理Team引用
+                _attackerTeam = null;
+                _defenderTeam = null;
+                _currentMission = null;
+                _currentSceneName = null;
+
+                #if DEBUG
+                Logger.LogDebug("OnEndMission", "Cleanup completed, calling base OnEndMission");
+                #endif
+
                 base.OnEndMission();
             }
             catch (Exception ex)
             {
                 #if DEBUG
                 Logger.LogError("OnEndMission", ex);
+                #endif
+                
+                // 确保基类方法被调用
+                base.OnEndMission();
+            }
+            finally
+            {
+                // 确保状态被正确设置
+                _isCleanedUp = true;
+                _isBeingRemoved = false;
+                
+                #if DEBUG
+                Logger.LogDebug("OnEndMission", "Mission end cleanup finished");
                 #endif
             }
         }
@@ -814,20 +865,40 @@ namespace IronBloodSiege
             try
             {
                 #if DEBUG
-                Logger.LogDebug("OnEndMissionInternal", "Mission ending internal started");
+                Logger.LogDebug("OnEndMissionInternal", "Starting internal mission end cleanup");
                 #endif
 
-                // 使用锁确保线程安全
-                lock (_cleanupLock)
+                // 确保资源被完全清理
+                if (!_isCleanedUp)
                 {
-                    if (!_isCleanedUp)
+                    lock (_cleanupLock)
                     {
-                        _missionEnding = true;
-                        _isDisabled = true;
-                        SafeCleanupResources();
-                        _isCleanedUp = true;
+                        if (!_isCleanedUp)
+                        {
+                            // 清理所有状态和引用
+                            _lastMoraleUpdateTime = 0f;
+                            _lastMessageTime = 0f;
+                            _lastRetreatMessageTime = 0f;
+                            _initialAttackerCount = 0;
+                            _currentMission = null;
+                            _currentSceneName = null;
+                            _attackerTeam = null;
+                            _defenderTeam = null;
+                            
+                            if (_chargedFormations != null)
+                            {
+                                _chargedFormations.Clear();
+                                _chargedFormations = null;
+                            }
+                            
+                            _isCleanedUp = true;
+                        }
                     }
                 }
+
+                #if DEBUG
+                Logger.LogDebug("OnEndMissionInternal", "Calling base OnEndMissionInternal");
+                #endif
 
                 base.OnEndMissionInternal();
             }
@@ -836,128 +907,66 @@ namespace IronBloodSiege
                 #if DEBUG
                 Logger.LogError("OnEndMissionInternal", ex);
                 #endif
+                
+                base.OnEndMissionInternal();
             }
         }
 
         public override void OnRemoveBehavior()
         {
+            if (_isBeingRemoved)
+            {
+                #if DEBUG
+                Logger.LogDebug("OnRemoveBehavior", "Behavior already being removed, skipping");
+                #endif
+                return;
+            }
+
             try
             {
-                if (_isBeingRemoved)
-                {
-                    #if DEBUG
-                    Logger.LogDebug("OnRemoveBehavior", "Skipping duplicate removal");
-                    #endif
-                    return;
-                }
-
-                _isBeingRemoved = true;
-                
                 #if DEBUG
                 Logger.LogDebug("OnRemoveBehavior", "Starting behavior removal");
                 #endif
 
-                try
+                _isBeingRemoved = true;
+                
+                // 确保所有资源都被清理
+                if (!_isCleanedUp)
                 {
-                    // 使用锁确保线程安全
                     lock (_cleanupLock)
                     {
                         if (!_isCleanedUp)
                         {
-                            _missionEnding = true;
-                            _isDisabled = true;
-                            SafeCleanupResources();
+                            if (_chargedFormations != null)
+                            {
+                                _chargedFormations.Clear();
+                                _chargedFormations = null;
+                            }
+                            _currentMission = null;
+                            _attackerTeam = null;
+                            _defenderTeam = null;
+                            _currentSceneName = null;
                             _isCleanedUp = true;
                         }
                     }
+                }
 
-                    base.OnRemoveBehavior();
-                }
-                catch (Exception ex)
-                {
-                    #if DEBUG
-                    Logger.LogError("OnRemoveBehavior inner", ex);
-                    #endif
-                }
+                base.OnRemoveBehavior();
             }
             catch (Exception ex)
             {
                 #if DEBUG
-                Logger.LogError("OnRemoveBehavior outer", ex);
+                Logger.LogError("OnRemoveBehavior", ex);
                 #endif
+                
+                base.OnRemoveBehavior();
             }
             finally
             {
                 _isBeingRemoved = false;
-            }
-        }
-
-        private void SafeCleanupResources()
-        {
-            try
-            {
+                
                 #if DEBUG
-                Logger.LogDebug("SafeCleanupResources", "Starting safe resource cleanup");
-                #endif
-
-                // 确保所有状态标记都被正确设置
-                _isDisabled = true;
-                _pendingDisable = false;
-                _disableTimer = 0f;
-                _isSiegeScene = false;
-
-                // 安全清理Formation相关资源
-                if (_chargedFormations != null)
-                {
-                    try
-                    {
-                        var formationsToRestore = _chargedFormations.ToList();
-                        foreach (var formation in formationsToRestore)
-                        {
-                            try
-                            {
-                                if (formation != null && SafetyChecks.IsValidFormation(formation))
-                                {
-                                    formation.SetMovementOrder(MovementOrder.MovementOrderStop);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                #if DEBUG
-                                Logger.LogError("SafeCleanupResources formation", ex);
-                                #endif
-                            }
-                        }
-                        _chargedFormations.Clear();
-                    }
-                    catch (Exception ex)
-                    {
-                        #if DEBUG
-                        Logger.LogError("SafeCleanupResources formations", ex);
-                        #endif
-                    }
-                }
-
-                // 重置所有计时器和状态变量
-                _lastMoraleUpdateTime = 0f;
-                _lastMessageTime = 0f;
-                _lastRetreatMessageTime = 0f;
-                _initialAttackerCount = 0;
-
-                // 清理引用
-                _currentMission = null;
-                _attackerTeam = null;
-                _defenderTeam = null;
-                _currentSceneName = null;
-
-                #if DEBUG
-                Logger.LogDebug("SafeCleanupResources", "Safe resource cleanup completed");
-                #endif
-            }
-            catch (Exception ex)
-            {
-                #if DEBUG
-                Logger.LogError("SafeCleanupResources", ex);
+                Logger.LogDebug("OnRemoveBehavior", "Behavior removal completed");
                 #endif
             }
         }

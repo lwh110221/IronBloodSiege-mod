@@ -1,8 +1,17 @@
-# 铁血攻城 (IronBloodSiege)
+# 铁血攻城 (IronBlood Siege) 🏰
+
+<div align="center">
+  <img src="https://img.shields.io/badge/游戏-骑马与砍杀：霸主-red"/>
+  <img src="https://img.shields.io/badge/游戏版本-1.2.12-blue"/>
+  <img src="https://img.shields.io/badge/语言-中文%20%7C%20English-green"/>
+  
+  简体中文 | [English](README_EN.md)
+</div>
 
 ## 简介
-铁血攻城是一个《骑马与砍杀2：霸主》(Mount & Blade II: Bannerlord) 的mod，旨在增强攻城战的体验。原版攻城战斗中，攻城士兵动不动无脑逃跑，经常出现人数碾压守军仍然溃败，导致对于深度高难度玩家的守城战斗体验较差 ，本mod可有效防止攻城士兵无脑逃跑，并动态调用函数调整士气值，确保攻城持续性。
+铁血攻城是一个《骑马与砍杀2：霸主》(Mount & Blade II: Bannerlord) 的mod，旨在增强攻城战的体验。原版攻守城战斗中，攻城士兵动不动无脑逃跑，经常出现人数碾压守军仍然溃败，导致对于深度高难度玩家的战斗体验较差 ，本mod可有效防止攻城士兵无脑逃跑，并动态调用函数调整士气值，确保攻城持续性。
 - 1.2+版本以上攻城的攻城方机制是士气结合战斗指挥系统而控制，其他包括防止溃军的mod在攻城战中大多数无法生效，所以本mod结合战斗指挥系统，动态调用函数调整士气值，士气值的调整是一个基本参考。
+
 - 本人仅测试了1.2.12版本，基本上没有什么问题，其他版本未测试。
 
 ## 功能
@@ -10,6 +19,23 @@
 - 动态调用函数调整士气值，确保攻城持续性
 - 完全可配置的设置选项
 - 实时战场状态反馈
+
+## 主要特性
+### 铁血进攻机制
+- 在攻城战中阻止士兵随意撤退
+- 根据战场形势动态调整士气
+- 当士兵数量不足时会自动解除铁血状态
+- 支持两种撤退判定方式：
+  - 固定数量模式：当进攻方士兵低于指定数量时解除铁血
+  - 比例模式：当进攻方士兵数量低于守军70%时解除铁血
+- 如果在倒计时期间有援军到达，会自动恢复铁血状态
+- 低于设置士兵数量阈值且无援兵解除铁血状态
+
+### 士气调整
+- 实时监控并提升低士气单位
+- 当士兵士气低于设定阈值时进行提升
+- 使用可配置的提升速率
+- 会显示被鼓舞的士兵数量
 
 ## 计算战场优势比率
 - 使用公式：strengthRatio = attackerCount / defenderCount
@@ -19,7 +45,29 @@
 ## 动态调整士气阈值
 - 当攻方数量优势明显时(比率 >= 1.5)，会降低士气阈值
 - 具体做法是将原始阈值乘以0.6
-- 这意味着在优势情况下，系统对士气的要求会更宽松
+- 优势情况下，系统对士气的要求会更宽松
+
+## 战场信息反馈
+- 战场状态变化
+- 关键信息提示：
+  - 士兵被鼓舞的数量
+  - 援军到达的通知
+  - 撤退条件触发的提示
+- 支持多语言本地化，目前有中文和英文
+
+## 配置选项
+- 可在游戏内设置面板中调整：
+  - 启用/禁用整个模组
+  - 选择撤退判定方式（固定数量/比例）
+  - 设置固定数量模式的阈值
+  - 调整士气提升阈值
+  - 设置士气提升速率
+
+## 注意事项
+- 两种撤退判定方式只能选择其一
+- 建议根据战场规模选择合适的固定数量阈值
+- 比例模式目前设置为 70％
+- Debug版本输出详细日志
 
 ## 安装要求
 - 游戏版本：Mount & Blade II: Bannerlord 1.2.12
@@ -53,11 +101,6 @@
 - 可以在战斗中随时通过ESC菜单调整设置
 - 多mod中，建议本mod在最后加载
 
-## 版本历史
-- v1.0.0
-  - 初始发布
-  - 实现基本功能
-  - 添加MCM配置支持
 
 ## 联系方式
 - 作者：Ahao
@@ -65,70 +108,3 @@
 
 ## 许可
 本mod仅供个人使用，禁止用于商业用途。
-
-# IronBlood Siege
-
-## Introduction
-IronBlood Siege is a mod for Mount & Blade II: Bannerlord that enhances the siege battle experience. In vanilla siege battles, attacking troops often retreat mindlessly, sometimes even when they vastly outnumber the defenders, leading to poor siege experience for players seeking challenging gameplay. This mod effectively prevents troops from retreating unnecessarily and dynamically adjusts morale values to ensure siege sustainability.
-
-## Features
-- Prevents troops from retreating unnecessarily during sieges
-- Dynamically adjusts morale values to ensure siege sustainability
-- Fully configurable settings
-- Real-time battlefield status feedback
-
-## Battle Advantage Ratio Calculation
-- Uses formula: strengthRatio = attackerCount / defenderCount
-- If defender count is 0, defaults to 2.0 (indicating significant advantage)
-- This ratio reflects the numerical comparison between attackers and defenders
-
-## Dynamic Morale Threshold Adjustment
-- When attackers have significant numerical advantage (ratio >= 1.5), morale threshold is reduced
-- Specifically, the original threshold is multiplied by 0.6
-- This means the system has more lenient morale requirements in advantageous situations
-
-## Requirements
-- Game Version: Mount & Blade II: Bannerlord 1.2.12
-- MCM (Mod Configuration Menu) v5+
-
-## Installation
-1. Ensure MCM (Mod Configuration Menu) is installed
-2. Copy mod files to the game's Modules folder
-3. Enable "IronBlood Siege" in the launcher's Mods section
-4. Ensure MCM loads before this mod in the load order
-
-## Settings Guide
-The following settings can be adjusted through the MCM menu in-game:
-
-### Basic Settings
-- Enable Mod: Toggle mod functionality on/off
-
-### Combat Settings
-- Siege Troop Morale Threshold (20-80):
-  - Morale will be boosted when below this value
-  - Default: 70
-  - Recommendation: Set lower when advantaged, higher when disadvantaged
-
-- Morale Boost Rate (5-30):
-  - Amount of morale boost per update
-  - Default: 15
-  - Recommendation: 15-20 is typically suitable
-
-## Usage Tips
-- The mod automatically takes effect during siege battles
-- Settings can be adjusted anytime through the ESC menu during battle
-- In multi-mod setups, recommend loading this mod last
-
-## Version History
-- v1.0.0
-  - Initial release
-  - Implemented core features
-  - Added MCM configuration support
-
-## Contact
-- Author: Ahao
-- Email: 2285813721@qq.com,ahao221x@gmail.com
-
-## License
-This mod is for personal use only. Commercial use is prohibited.
-

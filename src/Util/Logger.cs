@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using TaleWorlds.Library;
 
-namespace IronBloodSiege
+namespace IronBloodSiege.Util
 {
     public static class Logger
     {

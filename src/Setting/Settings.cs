@@ -3,7 +3,7 @@ using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions.Base.Global;
 using TaleWorlds.Localization;
 
-namespace IronBloodSiege
+namespace IronBloodSiege.Setting
 {
     public class Settings : AttributeGlobalSettings<Settings>
     {

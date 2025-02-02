@@ -82,9 +82,11 @@
   
   <ItemGroup>
     <Compile Include="src\SubModule.cs" />
-    <Compile Include="src\SafetyChecks.cs" />
-    <Compile Include="src\Settings.cs" />
-    <Compile Include="src\Logger.cs" />
+    <Compile Include="src\Behavior\SiegeMoraleBehavior.cs" />
+    <Compile Include="src\Setting\Settings.cs" />
+    <Compile Include="src\Util\SafetyChecks.cs" />
+    <Compile Include="src\Util\Constants.cs" />
+    <Compile Include="src\Util\Logger.cs" />
   </ItemGroup>
   
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

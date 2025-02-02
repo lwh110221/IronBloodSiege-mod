@@ -167,9 +167,9 @@ namespace IronBloodSiege.Behavior
                     return true;
 
                 #if DEBUG
-                Util.Logger.LogDebug("ShouldAllowRetreat", $"Checking retreat conditions - AttackerCount: {attackerCount}, " +
-                    $"EnableFixedRetreat: {Settings.Instance.EnableFixedRetreat}, RetreatThreshold: {Settings.Instance.RetreatThreshold}, " +
-                    $"EnableRatioRetreat: {Settings.Instance.EnableRatioRetreat}");
+                Util.Logger.LogDebug("撤退检查", $"检查撤退条件 - 攻击方数量: {attackerCount}, " +
+                    $"启用固定撤退: {Settings.Instance.EnableFixedRetreat}, 撤退阈值: {Settings.Instance.RetreatThreshold}, " +
+                    $"启用比例撤退: {Settings.Instance.EnableRatioRetreat}");
                 #endif
 
                 // 优先使用固定数量触发
@@ -177,7 +177,7 @@ namespace IronBloodSiege.Behavior
                 {
                     bool shouldRetreat = attackerCount <= Settings.Instance.RetreatThreshold;
                     #if DEBUG
-                    Util.Logger.LogDebug("ShouldAllowRetreat", $"Fixed threshold check - AttackerCount: {attackerCount} <= Threshold: {Settings.Instance.RetreatThreshold} = {shouldRetreat}");
+                    Util.Logger.LogDebug("撤退检查", $"固定阈值检查 - 攻击方数量: {attackerCount} <= 阈值: {Settings.Instance.RetreatThreshold} = {shouldRetreat}");
                     #endif
                     
                     if (shouldRetreat)
@@ -193,22 +193,21 @@ namespace IronBloodSiege.Behavior
                     bool shouldRetreat = defenderCount > 0 && attackerCount < defenderCount * 0.7f;
                     
                     #if DEBUG
-                    Util.Logger.LogDebug("ShouldAllowRetreat", $"Ratio threshold check - AttackerCount: {attackerCount}, DefenderCount: {defenderCount}, " +
-                        $"Ratio: {(defenderCount > 0 ? (float)attackerCount / defenderCount : 0):F2}, ShouldRetreat: {shouldRetreat}");
+                    Util.Logger.LogDebug("撤退检查", $"比例阈值检查 - 攻击方数量: {attackerCount}, 防守方数量: {defenderCount}, " +
+                        $"比例: {(defenderCount > 0 ? (float)attackerCount / defenderCount : 0):F2}, 是否撤退: {shouldRetreat}");
                     #endif
                     
                     if (shouldRetreat)
                     {
-                        StartDisableTimer("Ratio threshold reached");
+                        StartDisableTimer("达到比例阈值");
                         return true;
                     }
                 }
 
-                // 如果条件不满足，取消待禁用状态
                 if (_pendingDisable)
                 {
                     #if DEBUG
-                    Util.Logger.LogDebug("ShouldAllowRetreat", "Cancelling pending disable state");
+                    Util.Logger.LogDebug("撤退检查", "取消待禁用状态");
                     #endif
                     _pendingDisable = false;
                     _disableTimer = 0f;
@@ -229,7 +228,7 @@ namespace IronBloodSiege.Behavior
                 if (!_pendingDisable && SafetyChecks.IsMissionValid())
                 {
                     #if DEBUG
-                    Util.Logger.LogDebug("StartDisableTimer", $"Starting disable timer with reason: {reason}");
+                    Util.Logger.LogDebug("开始禁用计时", $"开始禁用计时，原因: {reason}");
                     #endif
                     
                     _pendingDisable = true;
@@ -282,7 +281,7 @@ namespace IronBloodSiege.Behavior
                 if (!_isDisabled)
                 {
                     #if DEBUG
-                    Util.Logger.LogDebug("DisableMod", $"Disabling mod with reason: {reason}");
+                    Util.Logger.LogDebug("禁用Mod", $"正在禁用mod，原因: {reason}");
                     #endif
                     _isDisabled = true;
                     _pendingDisable = false;
@@ -320,13 +319,13 @@ namespace IronBloodSiege.Behavior
                 int attackerCount = SafetyChecks.GetAttackerCount(team);
                 
                 #if DEBUG
-                Util.Logger.LogDebug("AdjustTeamMorale", $"Current attacker count: {attackerCount}");
+                Util.Logger.LogDebug("调整士气", $"当前攻击方数量: {attackerCount}");
                 #endif
 
                 if (ShouldAllowRetreat(team, attackerCount))
                 {
                     #if DEBUG
-                    Util.Logger.LogDebug("AdjustTeamMorale", "Retreat conditions met, skipping morale adjustment");
+                    Util.Logger.LogDebug("调整士气", "满足撤退条件，跳过士气调整");
                     #endif
                     return;
                 }
@@ -357,7 +356,7 @@ namespace IronBloodSiege.Behavior
                         Constants.WarningColor));
                     
                     #if DEBUG
-                    Util.Logger.LogDebug("AdjustTeamMorale", $"Displayed morale boost message for {boostedCount} troops");
+                    Util.Logger.LogDebug("调整士气", $"已显示士气提升消息，提升数量: {boostedCount}");
                     #endif
                 }
             }
@@ -492,10 +491,10 @@ namespace IronBloodSiege.Behavior
                     if (!_missionEnding)
                     {
                         #if DEBUG
-                        Util.Logger.LogDebug("MissionTick", "Battle ended detected");
+                        Util.Logger.LogDebug("任务检查", "检测到战斗结束");
                         #endif
                         _missionEnding = true;
-                        DisableMod("Battle ended");
+                        DisableMod("战斗结束");
                     }
                     return;
                 }
@@ -514,13 +513,13 @@ namespace IronBloodSiege.Behavior
                     #if DEBUG
                     if (_currentMission.CurrentTime % 10 < dt)
                     {
-                        Util.Logger.LogDebug("MissionTick", $"Scene state - IsSiege: {_isSiegeScene}, IsEnabled: {Settings.Instance.IsEnabled}, " +
-                            $"EnableFixedRetreat: {Settings.Instance.EnableFixedRetreat}, RetreatThreshold: {Settings.Instance.RetreatThreshold}");
+                        Util.Logger.LogDebug("任务检查", $"场景状态 - 是否攻城: {_isSiegeScene}, 是否启用: {Settings.Instance.IsEnabled}, " +
+                            $"启用固定撤退: {Settings.Instance.EnableFixedRetreat}, 撤退阈值: {Settings.Instance.RetreatThreshold}");
                         
                         if (_attackerTeam != null)
                         {
                             int currentAttackerCount = SafetyChecks.GetAttackerCount(_attackerTeam);
-                            Util.Logger.LogDebug("MissionTick", $"Current attacker count: {currentAttackerCount}");
+                            Util.Logger.LogDebug("任务检查", $"当前攻击方数量: {currentAttackerCount}");
                         }
                     }
                     #endif
@@ -616,7 +615,7 @@ namespace IronBloodSiege.Behavior
                 if (!_missionEnding)
                 {
                     #if DEBUG
-                    Util.Logger.LogDebug("OnClearScene", "Scene clearing started");
+                    Util.Logger.LogDebug("场景清理", "开始清理场景");
                     #endif
                     _missionEnding = true;
                     DisableMod("Scene clearing");
@@ -626,7 +625,7 @@ namespace IronBloodSiege.Behavior
             catch
             {
                 #if DEBUG
-                Util.Logger.LogDebug("OnClearScene", "Error during scene clearing");
+                Util.Logger.LogDebug("场景清理", "场景清理时发生错误");
                 #endif
             }
         }
@@ -667,7 +666,7 @@ namespace IronBloodSiege.Behavior
             try
             {
                 #if DEBUG
-                Util.Logger.LogDebug("OnEndMission", "Starting mission end cleanup");
+                Util.Logger.LogDebug("任务结束", "开始任务结束清理");
                 #endif
 
                 _missionEnding = true;
@@ -717,7 +716,7 @@ namespace IronBloodSiege.Behavior
                 _currentSceneName = null;
 
                 #if DEBUG
-                Util.Logger.LogDebug("OnEndMission", "Cleanup completed, calling base OnEndMission");
+                Util.Logger.LogDebug("任务结束", "清理完成，调用基类OnEndMission");
                 #endif
 
                 base.OnEndMission();
@@ -725,7 +724,7 @@ namespace IronBloodSiege.Behavior
             catch (Exception ex)
             {
                 #if DEBUG
-                Util.Logger.LogError("OnEndMission", ex);
+                Util.Logger.LogError("任务结束", ex);
                 #endif
                 
                 base.OnEndMission();
@@ -736,7 +735,7 @@ namespace IronBloodSiege.Behavior
                 _isBeingRemoved = false;
                 
                 #if DEBUG
-                Util.Logger.LogDebug("OnEndMission", "Mission end cleanup finished");
+                Util.Logger.LogDebug("任务结束", "任务结束清理完成");
                 #endif
             }
         }
@@ -746,7 +745,7 @@ namespace IronBloodSiege.Behavior
             try
             {
                 #if DEBUG
-                Util.Logger.LogDebug("OnEndMissionInternal", "Starting internal mission end cleanup");
+                Util.Logger.LogDebug("任务内部结束", "开始内部任务结束清理");
                 #endif
 
                 if (!_isCleanedUp)
@@ -776,7 +775,7 @@ namespace IronBloodSiege.Behavior
                 }
 
                 #if DEBUG
-                Util.Logger.LogDebug("OnEndMissionInternal", "Calling base OnEndMissionInternal");
+                Util.Logger.LogDebug("任务内部结束", "调用基类OnEndMissionInternal");
                 #endif
 
                 base.OnEndMissionInternal();
@@ -784,7 +783,7 @@ namespace IronBloodSiege.Behavior
             catch (Exception ex)
             {
                 #if DEBUG
-                Util.Logger.LogError("OnEndMissionInternal", ex);
+                Util.Logger.LogError("任务内部结束", ex);
                 #endif
                 
                 base.OnEndMissionInternal();
@@ -796,7 +795,7 @@ namespace IronBloodSiege.Behavior
             if (_isBeingRemoved)
             {
                 #if DEBUG
-                Util.Logger.LogDebug("OnRemoveBehavior", "Behavior already being removed, skipping");
+                Util.Logger.LogDebug("移除行为", "行为已在移除中，跳过");
                 #endif
                 return;
             }
@@ -804,7 +803,7 @@ namespace IronBloodSiege.Behavior
             try
             {
                 #if DEBUG
-                Util.Logger.LogDebug("OnRemoveBehavior", "Starting behavior removal");
+                Util.Logger.LogDebug("移除行为", "开始移除行为");
                 #endif
 
                 _isBeingRemoved = true;
@@ -834,7 +833,7 @@ namespace IronBloodSiege.Behavior
             catch (Exception ex)
             {
                 #if DEBUG
-                Util.Logger.LogError("OnRemoveBehavior", ex);
+                Util.Logger.LogError("移除行为", ex);
                 #endif
                 
                 base.OnRemoveBehavior();
@@ -844,7 +843,7 @@ namespace IronBloodSiege.Behavior
                 _isBeingRemoved = false;
                 
                 #if DEBUG
-                Util.Logger.LogDebug("OnRemoveBehavior", "Behavior removal completed");
+                Util.Logger.LogDebug("移除行为", "行为移除完成");
                 #endif
             }
         }

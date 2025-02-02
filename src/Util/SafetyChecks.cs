@@ -24,10 +24,10 @@ namespace IronBloodSiege.Util
                 #if DEBUG
                 if (!isValid)
                 {
-                    Logger.LogDebug("IsValidAgent", 
-                        $"Agent validation failed - IsHuman: {isHuman}, " +
-                        $"IsActive: {isActive}, " +
-                        $"IsNotPlayerControlled: {isNotPlayerControlled}");
+                    Logger.LogDebug("Agent验证", 
+                        $"Agent验证失败 - 是人类: {isHuman}, " +
+                        $"是活跃的: {isActive}, " +
+                        $"不是玩家控制的: {isNotPlayerControlled}");
                 }
                 #endif
 
@@ -55,11 +55,11 @@ namespace IronBloodSiege.Util
                 #if DEBUG
                 if (!hasValidTeam || !hasUnits)
                 {
-                    Logger.LogDebug("IsValidFormation", 
-                        $"Formation validation failed - " +
-                        $"HasUnits: {hasUnits}, " +
-                        $"Formation team: {formation.Team?.Side}, " +
-                        $"Expected team: {Mission.Current?.AttackerTeam?.Side}");
+                    Logger.LogDebug("Formation验证", 
+                        $"Formation验证失败 - " +
+                        $"有单位: {hasUnits}, " +
+                        $"Formation队伍: {formation.Team?.Side}, " +
+                        $"Expected队伍: {Mission.Current?.AttackerTeam?.Side}");
                 }
                 #endif
 
@@ -101,12 +101,12 @@ namespace IronBloodSiege.Util
                 var sceneName = mission.SceneName?.ToLowerInvariant() ?? string.Empty;
                 
                 #if DEBUG
-                Logger.LogDebug("IsSiegeSceneValid", 
-                    $"Checking scene - Mode: {mission.Mode}, " +
-                    $"Scene: {sceneName}, " +
-                    $"HasDefender: {mission.DefenderTeam != null}, " +
-                    $"HasAttacker: {mission.AttackerTeam != null}, " +
-                    $"IsSiegeBattle: {mission.IsSiegeBattle}, " +
+                Logger.LogDebug("场景验证", 
+                    $"检查场景 - 模式: {mission.Mode}, " +
+                    $"场景: {sceneName}, " +
+                    $"有防守方: {mission.DefenderTeam != null}, " +
+                    $"有进攻方: {mission.AttackerTeam != null}, " +
+                    $"是攻城战: {mission.IsSiegeBattle}, " +
                     $"IsSallyOutBattle: {mission.IsSallyOutBattle}, " +
                     $"MissionTime: {mission.CurrentTime:F2}, " +
                     $"MissionEnded: {mission.MissionEnded}, " +
@@ -131,12 +131,12 @@ namespace IronBloodSiege.Util
                 #if DEBUG
                 if (!isValidSiegeScene)
                 {
-                    Logger.LogDebug("IsSiegeSceneValid", 
-                        $"Scene validation failed - ValidMode: {isValidMode}, " +
-                        $"ValidSceneName: {hasValidSceneName}, " +
-                        $"ValidTeams: {hasValidTeams}, " +
-                        $"CurrentMode: {mission.Mode}, " +
-                        $"SceneName: {sceneName}");
+                    Logger.LogDebug("场景验证", 
+                        $"场景验证失败 - 允许模式: {isValidMode}, " +
+                        $"场景名称: {hasValidSceneName}, " +
+                        $"队伍: {hasValidTeams}, " +
+                        $"当前模式: {mission.Mode}, " +
+                        $"场景名称: {sceneName}");
                 }
                 #endif
 
@@ -182,10 +182,10 @@ namespace IronBloodSiege.Util
 
                 #if DEBUG
                 Logger.LogDebug("GetAttackerCount", 
-                    $"Team: {team.Side}, " +
-                    $"Total agents: {totalCount}, " +
-                    $"Valid agents: {validCount}, " +
-                    $"Invalid agents: {totalCount - validCount}");
+                    $"队伍: {team.Side}, " +
+                    $"总人数: {totalCount}, " +
+                    $"有效人数: {validCount}, " +
+                    $"无效人数: {totalCount - validCount}");
                 #endif
 
                 return validCount;

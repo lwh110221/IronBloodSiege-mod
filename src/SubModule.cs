@@ -18,6 +18,24 @@ namespace IronBloodSiege
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
+            #if DEBUG
+            try 
+            {
+                Util.Logger.LogDebug("初始化", "铁血攻城Mod开始加载");
+                Util.Logger.LogDebug("初始化", $"当前目录: {System.IO.Directory.GetCurrentDirectory()}");
+                Util.Logger.LogDebug("初始化", $"程序集版本: {typeof(SubModule).Assembly.GetName().Version}");
+                Util.Logger.LogDebug("初始化", $"程序集位置: {typeof(SubModule).Assembly.Location}");
+                Util.Logger.LogDebug("初始化", $"调试模式已启用");
+                
+                // 检查是否正确加载了TaleWorlds.Engine
+                var engineAssembly = typeof(TaleWorlds.Engine.MBDebug).Assembly;
+                Util.Logger.LogDebug("初始化", $"TaleWorlds.Engine版本: {engineAssembly.GetName().Version}");
+            }
+            catch (Exception ex)
+            {
+                Util.Logger.LogError("初始化", ex);
+            }
+            #endif
         }
 
         public override void OnInitialState()

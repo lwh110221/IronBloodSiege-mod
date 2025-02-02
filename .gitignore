@@ -6,6 +6,7 @@
 *.sln.docstates
 *.userprefs
 ironlocal.csproj
+ironlocal.csproj.user
 mod.sln
 .vscode/
 

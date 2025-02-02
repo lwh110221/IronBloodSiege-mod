@@ -1,5 +1,7 @@
 using System;
 using TaleWorlds.Library;
+using TaleWorlds.Engine;
+using Debug = System.Diagnostics.Debug;
 
 namespace IronBloodSiege.Util
 {
@@ -10,11 +12,20 @@ namespace IronBloodSiege.Util
             #if DEBUG
             try
             {
-                TaleWorlds.Library.Debug.Print($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [调试] [{context}] {message}");
+                // MBDebug输出
+                //MBDebug.EchoCommandWindow($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [调试] [{context}] {message}");
+                
+                // System.Diagnostics.Debug输出
+                Debug.WriteLine($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [调试] [{context}] {message}");
+                
+                // 控制台输出
+                //Console.WriteLine($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [调试] [{context}] {message}");
             }
-            catch
+            catch (Exception ex)
             {
-                // 忽略日志错误
+                // 输出异常信息
+                Debug.WriteLine($"[铁血攻城] 日志错误: {ex.Message}");
+                //Console.WriteLine($"[铁血攻城] 日志错误: {ex.Message}");
             }
             #endif
         }
@@ -24,10 +35,12 @@ namespace IronBloodSiege.Util
             #if DEBUG
             try
             {
-                TaleWorlds.Library.Debug.Print($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [错误] [{context}] {ex.Message}");
+                //MBDebug.EchoCommandWindow($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [错误] [{context}] {ex.Message}");
+                Debug.WriteLine($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [错误] [{context}] {ex.Message}");
                 if (ex.StackTrace != null)
                 {
-                    TaleWorlds.Library.Debug.Print($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [堆栈] [{context}] {ex.StackTrace}");
+                    //MBDebug.EchoCommandWindow($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [堆栈] [{context}] {ex.StackTrace}");
+                    Debug.WriteLine($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [堆栈] [{context}] {ex.StackTrace}");
                 }
             }
             catch
@@ -42,7 +55,8 @@ namespace IronBloodSiege.Util
             #if DEBUG
             try
             {
-                TaleWorlds.Library.Debug.Print($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [信息] {message}");
+                //MBDebug.EchoCommandWindow($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [信息] {message}");
+                Debug.WriteLine($"[铁血攻城] [{DateTime.Now:HH:mm:ss}] [信息] {message}");
             }
             catch
             {

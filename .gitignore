@@ -5,6 +5,9 @@
 *.userosscache
 *.sln.docstates
 *.userprefs
+ironlocal.csproj
+mod.sln
+.vscode/
 
 # Build results
 [Dd]ebug/

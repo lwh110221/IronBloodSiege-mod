@@ -120,6 +120,7 @@ namespace IronBloodSiege.Util
                 bool hasValidSceneName = !string.IsNullOrEmpty(sceneName) &&
                                        (sceneName.Contains("siege") || 
                                         sceneName.Contains("castle") ||
+                                        sceneName.Contains("town") ||
                                         mission.IsSiegeBattle ||
                                         mission.IsSallyOutBattle);
 

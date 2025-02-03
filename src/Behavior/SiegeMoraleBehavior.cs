@@ -12,7 +12,7 @@ namespace IronBloodSiege.Behavior
     public class SiegeMoraleBehavior : MissionBehavior
     {
         // 使用HashSet存储Formation
-        private HashSet<Formation> _chargedFormations;
+        private HashSet<Formation> _advancedFormations;
         
         // 缓存Mission.Current以减少访问次数
         private Mission _currentMission;
@@ -85,13 +85,13 @@ namespace IronBloodSiege.Behavior
             _lastMessageTime = 0f;
             _lastRetreatMessageTime = 0f;
             
-            if (_chargedFormations == null)
+            if (_advancedFormations == null)
             {
-                _chargedFormations = new HashSet<Formation>();
+                _advancedFormations = new HashSet<Formation>();
             }
             else
             {
-                _chargedFormations.Clear();
+                _advancedFormations.Clear();
             }
         }
 
@@ -102,7 +102,7 @@ namespace IronBloodSiege.Behavior
             
             return _currentMission.Mode == MissionMode.Battle && 
                    !string.IsNullOrEmpty(_currentSceneName) &&
-                   (_currentSceneName.Contains("siege") || _currentSceneName.Contains("castle")) &&
+                   (_currentSceneName.Contains("siege") || _currentSceneName.Contains("castle") || _currentSceneName.Contains("town")) &&
                    _defenderTeam != null &&
                    _attackerTeam != null;
         }
@@ -113,10 +113,10 @@ namespace IronBloodSiege.Behavior
             {
                 if (!SafetyChecks.IsValidFormation(formation)) return;
                 
-                if (!_chargedFormations.Contains(formation))
+                if (!_advancedFormations.Contains(formation))
                 {
-                    formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
-                    _chargedFormations.Add(formation);
+                    formation.SetMovementOrder(MovementOrder.MovementOrderAdvance);
+                    _advancedFormations.Add(formation);
                 }
             }
             catch (Exception ex)
@@ -142,16 +142,16 @@ namespace IronBloodSiege.Behavior
 
         private void RestoreAllFormations()
         {
-            if (_chargedFormations == null) return;
+            if (_advancedFormations == null) return;
             
             try
             {
-                var formationsToRestore = _chargedFormations.ToList();
+                var formationsToRestore = _advancedFormations.ToList();
                 foreach (Formation formation in formationsToRestore)
                 {
                     RestoreFormation(formation);
                 }
-                _chargedFormations.Clear();
+                _advancedFormations.Clear();
             }
             catch (Exception ex)
             {
@@ -182,7 +182,7 @@ namespace IronBloodSiege.Behavior
                     
                     if (shouldRetreat)
                     {
-                        StartDisableTimer("Fixed threshold reached");
+                        StartDisableTimer("达到固定阈值");
                         return true;
                     }
                 }
@@ -216,7 +216,7 @@ namespace IronBloodSiege.Behavior
             }
             catch (Exception ex)
             {
-                HandleError("retreat check", ex);
+                HandleError("撤退检查", ex);
                 return true; // 出错时允许撤退
             }
         }
@@ -243,14 +243,14 @@ namespace IronBloodSiege.Behavior
                             Constants.WarningColor));
                         
                         #if DEBUG
-                        Util.Logger.LogDebug("StartDisableTimer", "Retreat message displayed");
+                        Util.Logger.LogDebug("禁用计时", "显示撤退消息");
                         #endif
                     }
                 }
             }
             catch (Exception ex)
             {
-                HandleError("start disable timer", ex);
+                HandleError("禁用计时", ex);
             }
         }
 
@@ -270,7 +270,7 @@ namespace IronBloodSiege.Behavior
             }
             catch (Exception ex)
             {
-                HandleError("show retreat message", ex);
+                HandleError("显示撤退消息", ex);
             }
         }
 
@@ -296,7 +296,7 @@ namespace IronBloodSiege.Behavior
             }
             catch (Exception ex)
             {
-                HandleError("disable mod", ex);
+                HandleError("禁用Mod", ex);
             }
         }
 
@@ -362,7 +362,7 @@ namespace IronBloodSiege.Behavior
             }
             catch (Exception ex)
             {
-                HandleError("adjust team morale", ex);
+                HandleError("调整士气", ex);
             }
         }
 
@@ -408,7 +408,7 @@ namespace IronBloodSiege.Behavior
                 }
                 catch (Exception ex)
                 {
-                    HandleError("agent morale update", ex);
+                    HandleError("AI士气更新", ex);
                 }
             }
             return boostedCount;
@@ -465,7 +465,7 @@ namespace IronBloodSiege.Behavior
             }
             catch (Exception ex)
             {
-                HandleError("agent fleeing", ex);
+                HandleError("AI逃离", ex);
             }
         }
 
@@ -526,7 +526,7 @@ namespace IronBloodSiege.Behavior
                     
                     if (previousSceneState && !_isSiegeScene)
                     {
-                        DisableMod("Siege scene ended");
+                        DisableMod("攻城场景结束");
                         return;
                     }
                 }
@@ -548,8 +548,8 @@ namespace IronBloodSiege.Behavior
             }
             catch (Exception ex)
             {
-                HandleError("mission tick", ex);
-                DisableMod("Mission tick error");
+                HandleError("任务更新", ex);
+                DisableMod("任务更新错误");
             }
         }
 
@@ -578,7 +578,7 @@ namespace IronBloodSiege.Behavior
 
                     if (ShouldAllowRetreat(Mission.Current.AttackerTeam, currentAttackerCount))
                     {
-                        DisableMod("Disable timer expired");
+                        DisableMod("禁用计时过期");
                     }
                     
                     _pendingDisable = false;
@@ -672,11 +672,11 @@ namespace IronBloodSiege.Behavior
                 _missionEnding = true;
                 _isDisabled = true;
 
-                if (_chargedFormations != null)
+                if (_advancedFormations != null)
                 {
                     try
                     {
-                        foreach (var formation in _chargedFormations.ToList())
+                        foreach (var formation in _advancedFormations.ToList())
                         {
                             if (formation != null)
                             {
@@ -697,8 +697,8 @@ namespace IronBloodSiege.Behavior
                     }
                     finally
                     {
-                        _chargedFormations.Clear();
-                        _chargedFormations = null;
+                        _advancedFormations.Clear();
+                        _advancedFormations = null;
                     }
                 }
 
@@ -763,10 +763,10 @@ namespace IronBloodSiege.Behavior
                             _attackerTeam = null;
                             _defenderTeam = null;
                             
-                            if (_chargedFormations != null)
+                            if (_advancedFormations != null)
                             {
-                                _chargedFormations.Clear();
-                                _chargedFormations = null;
+                                _advancedFormations.Clear();
+                                _advancedFormations = null;
                             }
                             
                             _isCleanedUp = true;
@@ -814,10 +814,10 @@ namespace IronBloodSiege.Behavior
                     {
                         if (!_isCleanedUp)
                         {
-                            if (_chargedFormations != null)
+                            if (_advancedFormations != null)
                             {
-                                _chargedFormations.Clear();
-                                _chargedFormations = null;
+                                _advancedFormations.Clear();
+                                _advancedFormations = null;
                             }
                             _currentMission = null;
                             _attackerTeam = null;

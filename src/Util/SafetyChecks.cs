@@ -17,30 +17,14 @@ namespace IronBloodSiege.Util
         private const float COUNT_CACHE_DURATION = 1f; // 1秒缓存时间
 
         /// <summary>
-        /// 检查Agent是否有效
+        /// 检查Agent是否为有效的AI控制的战斗单位
         /// </summary>
         public static bool IsValidAgent(Agent agent)
         {
             try
             {
-                if (agent == null) return false;
-
-                bool isHuman = agent.IsHuman;
-                bool isActive = agent.IsActive();
-                bool isNotPlayerControlled = !agent.IsPlayerControlled;
-                bool isValid = isHuman && isActive && isNotPlayerControlled;
-
-                #if DEBUG
-                if (!isValid)
-                {
-                    Logger.LogDebug("Agent验证", 
-                        $"Agent验证失败 - 是人类: {isHuman}, " +
-                        $"是活跃的: {isActive}, " +
-                        $"不是玩家控制的: {isNotPlayerControlled}");
-                }
-                #endif
-
-                return isValid;
+                if (agent == null || agent.IsPlayerControlled) return false;
+                return agent.IsHuman && agent.IsActive();
             }
             catch
             {
@@ -212,6 +196,22 @@ namespace IronBloodSiege.Util
         }
 
         /// <summary>
+        /// 检查玩家是否为攻城方
+        /// </summary>
+        public static bool IsPlayerAttacker()
+        {
+            try
+            {
+                if (!IsMissionValid()) return false;
+                return Mission.Current.MainAgent?.Team == Mission.Current.AttackerTeam;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// 安全获取士兵数量，缓存减少重复计算
         /// 获取攻城方和守城方的士兵数量
         /// </summary>
@@ -262,10 +262,10 @@ namespace IronBloodSiege.Util
 
                 return validCount;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 #if DEBUG
-                Logger.LogError("GetAttackerCount", ex);
+                Logger.LogDebug("GetAttackerCount", "获取攻击方数量时发生错误");
                 #endif
                 return 0;
             }

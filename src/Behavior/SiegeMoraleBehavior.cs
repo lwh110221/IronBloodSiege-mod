@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.Engine;
-using TaleWorlds.MountAndBlade.Objects.Siege;
-using TaleWorlds.MountAndBlade.Objects;
 using IronBloodSiege.Util;
 using IronBloodSiege.Setting;
 
@@ -41,6 +38,11 @@ namespace IronBloodSiege.Behavior
         private bool _isCleanedUp = false;  // 添加标记，确保只清理一次
         private readonly object _cleanupLock = new object();  // 线程锁
         private float _battleStartTime = 0f; // 战斗开始时间
+
+        // 添加缓存相关字段
+        private readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();
+        private float _lastCacheUpdateTime = 0f;
+        private const float CACHE_UPDATE_INTERVAL = 5f;
         #endregion
 
         #region Properties
@@ -182,7 +184,7 @@ namespace IronBloodSiege.Behavior
                 }
                 base.OnClearScene();
             }
-            catch
+            catch (Exception)  // 移除未使用的ex变量
             {
                 #if DEBUG
                 Util.Logger.LogDebug("场景清理", "场景清理时发生错误");
@@ -202,6 +204,8 @@ namespace IronBloodSiege.Behavior
                     BehaviorCleanupHelper.CleanupFormations(_advancedFormations, RestoreFormation);
                     _advancedFormations = null;
                 }
+
+                _teamCountCache?.Clear();
 
                 BehaviorCleanupHelper.CleanupMissionEnd(
                     ref _missionEnding,
@@ -225,10 +229,10 @@ namespace IronBloodSiege.Behavior
 
                 base.OnEndMission();
             }
-            catch (Exception ex)
+            catch (Exception)  // 移除未使用的ex变量
             {
                 #if DEBUG
-                Util.Logger.LogError("任务结束", ex);
+                Util.Logger.LogDebug("任务结束", "任务结束时发生错误");
                 #endif
                 
                 base.OnEndMission();
@@ -242,9 +246,6 @@ namespace IronBloodSiege.Behavior
                 Util.Logger.LogDebug("任务结束", "任务结束清理完成");
                 #endif
             }
-
-            _teamCountCache?.Clear();
-            _advancedFormations?.Clear();
         }
 
         public override void OnEndMissionInternal()
@@ -406,7 +407,7 @@ namespace IronBloodSiege.Behavior
                 if (currentTime - _lastMoraleUpdateTime < Constants.MORALE_UPDATE_INTERVAL)
                     return;
 
-                bool isPlayerAttacker = _currentMission.MainAgent?.Team == _attackerTeam;
+                bool isPlayerAttacker = SafetyChecks.IsPlayerAttacker();
                 if (isPlayerAttacker && !Settings.Instance.EnableWhenPlayerAttacker)
                 {
                     #if DEBUG
@@ -601,12 +602,13 @@ namespace IronBloodSiege.Behavior
             try
             {
                 if (!SafetyChecks.IsValidFormation(formation)) return;
-                
-                // 检查是否是玩家控制的编队
-                if (formation.PlayerOwner != null)
+                         
+                // 如果玩家是攻城方，不使用SetControlledByAI
+                if (SafetyChecks.IsPlayerAttacker())
                 {
                     #if DEBUG
-                    Util.Logger.LogDebug("防止撤退", "跳过玩家控制的编队");
+                    Util.Logger.LogDebug("防止撤退", 
+                        $"玩家是攻城方，跳过AI控制设置");
                     #endif
                     return;
                 }

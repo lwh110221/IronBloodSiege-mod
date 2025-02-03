@@ -19,9 +19,10 @@ namespace IronBloodSiege.Util
         public static readonly TextObject ReinforcementMessage = new TextObject("{=ibs_reinforcement_message}IronBlood Siege: Reinforcements have arrived, iron will attack resumed!");
 
         // 时间常量
-        public const float MORALE_UPDATE_INTERVAL = 0.5f;
-        public const float MESSAGE_COOLDOWN = 10f;
-        public const float RETREAT_MESSAGE_COOLDOWN = 25f;
-        public const float BATTLE_START_GRACE_PERIOD = 30f;
+        public const float MORALE_UPDATE_INTERVAL = 1f; // 士气更新间隔
+        public const float MESSAGE_COOLDOWN = 10f;      // 消息冷却时间
+        public const float RETREAT_MESSAGE_COOLDOWN = 25f; // 撤退消息冷却时间
+        public const float BATTLE_START_GRACE_PERIOD = 50f; // 战斗开始缓冲期
+
     }
 } 

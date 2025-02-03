@@ -24,15 +24,15 @@ jobs:
         dotnet-version: '6.0.x'
         
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore IronBloodSiege.csproj
       
     - name: Build Release Version
       run: |
-        msbuild /p:Configuration=Release /p:Platform=AnyCPU
+        msbuild /p:Configuration=Release /p:Platform=AnyCPU IronBloodSiege.csproj
         
     - name: Build Debug Version
       run: |
-        msbuild /p:Configuration=Debug /p:Platform=AnyCPU
+        msbuild /p:Configuration=Debug /p:Platform=AnyCPU IronBloodSiege.csproj
         
     - name: Create Release Version
       run: |

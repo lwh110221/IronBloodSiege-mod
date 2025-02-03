@@ -242,6 +242,9 @@ namespace IronBloodSiege.Behavior
                 Util.Logger.LogDebug("任务结束", "任务结束清理完成");
                 #endif
             }
+
+            _teamCountCache?.Clear();
+            _advancedFormations?.Clear();
         }
 
         public override void OnEndMissionInternal()

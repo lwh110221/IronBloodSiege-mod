@@ -24,7 +24,9 @@
     <string id="ibs_retreat_threshold" text="Fixed Number Threshold"/>
     <string id="ibs_retreat_threshold_hint" text="Disable iron will when attacker troops fall below this number"/>
     <string id="ibs_ratio_retreat" text="Auto Ratio Iron Will Disable"/>
-    <string id="ibs_ratio_retreat_hint" text="Disable iron will when attacker troops fall below 70% of defenders"/>
+    <string id="ibs_ratio_retreat_hint" text="Disable iron will when attacker troops fall below specified ratio of defenders"/>
+    <string id="ibs_ratio_threshold" text="Ratio Threshold"/>
+    <string id="ibs_ratio_threshold_hint" text="Disable iron will when attacker/defender ratio falls below this value. Default: 0.7"/>
     
     <!-- 战斗设置 -->
     <string id="ibs_combat_settings" text="Combat Settings"/>

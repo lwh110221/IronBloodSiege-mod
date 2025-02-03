@@ -561,11 +561,14 @@ namespace IronBloodSiege.Behavior
                 else if (Settings.Instance.EnableRatioRetreat && _defenderTeam != null)
                 {
                     int defenderCount = SafetyChecks.GetAttackerCount(_defenderTeam);
-                    bool shouldRetreat = defenderCount > 0 && attackerCount < defenderCount * 0.7f;
+                    bool shouldRetreat = defenderCount > 0 && 
+                        attackerCount < defenderCount * Settings.Instance.RatioThreshold;
                     
                     #if DEBUG
                     Util.Logger.LogDebug("撤退检查", $"比例阈值检查 - 攻击方数量: {attackerCount}, 防守方数量: {defenderCount}, " +
-                        $"比例: {(defenderCount > 0 ? (float)attackerCount / defenderCount : 0):F2}, 是否撤退: {shouldRetreat}");
+                        $"比例: {(defenderCount > 0 ? (float)attackerCount / defenderCount : 0):F2}, " +
+                        $"阈值: {Settings.Instance.RatioThreshold:F2}, " +
+                        $"是否撤退: {shouldRetreat}");
                     #endif
                     
                     if (shouldRetreat)

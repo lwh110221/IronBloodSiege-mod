@@ -25,7 +25,9 @@
     <string id="ibs_retreat_threshold" text="固定数量触发阈值" />
     <string id="ibs_retreat_threshold_hint" text="当进攻方士兵数量低于此值时，不再铁血进攻" />
     <string id="ibs_ratio_retreat" text="自动比例不再铁血进攻" />
-    <string id="ibs_ratio_retreat_hint" text="当进攻方士兵数量低于守军的70%时，不再铁血进攻" />
+    <string id="ibs_ratio_retreat_hint" text="当进攻方士兵数量低于守军的指定比例时，不再铁血进攻" />
+    <string id="ibs_ratio_threshold" text="比例阈值" />
+    <string id="ibs_ratio_threshold_hint" text="当进攻方/守军比例低于此值时，不再铁血进攻 默认0.7" />
     
     <!-- Combat Settings -->
     <string id="ibs_combat_settings" text="战斗设置" />

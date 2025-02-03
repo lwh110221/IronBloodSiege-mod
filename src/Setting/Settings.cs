@@ -35,9 +35,19 @@ namespace IronBloodSiege.Setting
         public int RetreatThreshold { get; set; } = 100;
 
         [SettingPropertyBool("{=ibs_ratio_retreat}Auto Ratio Iron Will Disable", RequireRestart = false, 
-            HintText = "{=ibs_ratio_retreat_hint}Disable iron will when attacker troops fall below 70% of defenders", Order = 2)]
+            HintText = "{=ibs_ratio_retreat_hint}Disable iron will when attacker troops fall below specified ratio of defenders", Order = 2)]
         [SettingPropertyGroup("{=ibs_retreat_conditions}Iron Will Disable Conditions (Note: Choose only one of the two methods!)", GroupOrder = 1)]
         public bool EnableRatioRetreat { get; set; } = false;
+
+        [SettingPropertyFloatingInteger("{=ibs_ratio_threshold}Ratio Threshold", 0.3f, 0.9f, "0.00", RequireRestart = false,
+            HintText = "{=ibs_ratio_threshold_hint}Disable iron will when attacker/defender ratio falls below this value. Default: 0.7", Order = 3)]
+        [SettingPropertyGroup("{=ibs_retreat_conditions}Iron Will Disable Conditions (Note: Choose only one of the two methods!)", GroupOrder = 1)]
+        public float RatioThreshold { get; set; } = 0.7f;
+
+        [SettingPropertyFloatingInteger("{=ibs_disable_delay}Disable Delay", 10f, 120f, "0", RequireRestart = false, 
+            HintText = "{=ibs_disable_delay_hint}Time to wait before disabling iron will (seconds). Default: 50", Order = 4)]
+        [SettingPropertyGroup("{=ibs_retreat_conditions}Iron Will Disable Conditions (Note: Choose only one of the two methods!)", GroupOrder = 1)]
+        public float DisableDelay { get; set; } = 50f;
 
         [SettingPropertyFloatingInteger("{=ibs_morale_threshold}Siege Troop Morale Threshold", 20f, 80f, "0", RequireRestart = false, 
             HintText = "{=ibs_morale_threshold_hint}Morale will be boosted when troops fall below this value. Default: 70", Order = 0)]
@@ -49,20 +59,16 @@ namespace IronBloodSiege.Setting
         [SettingPropertyGroup("{=ibs_combat_settings}Combat Settings", GroupOrder = 2)]
         public float MoraleBoostRate { get; set; } = 15f;
 
-        [SettingPropertyFloatingInteger("{=ibs_disable_delay}Iron Will Waiting Time for Reinforcements", 5f, 30f, "0", RequireRestart = false, 
-            HintText = "{=ibs_disable_delay_hint}The delay time from triggering the loss of Iron Will state to actually disabling the Iron Will effect. If no reinforcements arrive during this time, siege troops will completely lose their Iron Will state (seconds). Default: 20", Order = 2)]
-        [SettingPropertyGroup("{=ibs_combat_settings}Combat Settings", GroupOrder = 2)]
-        public float DisableDelay { get; set; } = 20f;
-
         public Settings()
         {
             IsEnabled = true;
             EnableFixedRetreat = true;
             RetreatThreshold = 100;
             EnableRatioRetreat = false;
+            RatioThreshold = 0.7f;
+            DisableDelay = 50f;
             MoraleThreshold = 70f;
             MoraleBoostRate = 15f;
-            DisableDelay = 20f;
         }
     }
 } 

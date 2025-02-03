@@ -223,6 +223,36 @@ namespace IronBloodSiege.Util
 
                 float currentTime = Mission.Current.CurrentTime;
                 
+                // 战斗开始的前60秒，禁用缓存并等待所有部队生成完成
+                bool isInitialPhase = currentTime < 60f;
+                if (isInitialPhase)
+                {
+                    var initialAgents = team.ActiveAgents;
+                    if (initialAgents == null) return 0;
+
+                    int initialCount = initialAgents.Count(agent => IsValidAgent(agent));
+                    
+                    #if DEBUG
+                    Logger.LogDebug("GetAttackerCount", 
+                        $"战斗初期计算 - Team: {team.Side}, " +
+                        $"Count: {initialCount}, " +
+                        $"Time: {currentTime:F2}");
+                    #endif
+
+                    // 初期阶段数量异常，返回一个安全值
+                    if (initialCount < 50)
+                    {
+                        #if DEBUG
+                        Logger.LogDebug("GetAttackerCount", 
+                            $"战斗初期数量异常，返回安全值 - Team: {team.Side}, " +
+                            $"原始Count: {initialCount}");
+                        #endif
+                        return 999; // 返回安全的大数值
+                    }
+
+                    return initialCount;
+                }
+
                 // 使用Team.Side作为缓存键，避免使用Team对象本身
                 int teamKey = (int)team.Side;
                 
@@ -267,7 +297,7 @@ namespace IronBloodSiege.Util
                 #if DEBUG
                 Logger.LogDebug("GetAttackerCount", "获取攻击方数量时发生错误");
                 #endif
-                return 0;
+                return 999; // 发生错误时返回安全值
             }
         }
     }

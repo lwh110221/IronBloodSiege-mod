@@ -2,11 +2,20 @@ using TaleWorlds.MountAndBlade;
 using TaleWorlds.Core;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace IronBloodSiege.Util
 {
     public static class SafetyChecks
     {
+        private static bool? _cachedIsSiegeScene = null;
+        private static int _sceneCheckCount = 0;
+        private static readonly int MAX_SCENE_CHECKS = 3;
+        private static string _lastCheckedSceneName = null;
+        private static readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();
+        private static float _lastCountUpdateTime = 0f;
+        private const float COUNT_CACHE_DURATION = 1f; // 1秒缓存时间
+
         /// <summary>
         /// 检查Agent是否有效
         /// </summary>
@@ -95,10 +104,35 @@ namespace IronBloodSiege.Util
             try
             {
                 if (!IsMissionValid()) 
+                {
+                    _cachedIsSiegeScene = null;
+                    _sceneCheckCount = 0;
+                    _lastCheckedSceneName = null;
                     return false;
+                }
 
                 var mission = Mission.Current;
-                var sceneName = mission.SceneName?.ToLowerInvariant() ?? string.Empty;
+                var currentSceneName = mission.SceneName;
+
+                // 已经有缓存结果且场景名没变，直接返回
+                if (_cachedIsSiegeScene.HasValue && 
+                    _sceneCheckCount >= MAX_SCENE_CHECKS && 
+                    _lastCheckedSceneName == currentSceneName)
+                {
+                    return _cachedIsSiegeScene.Value;
+                }
+
+                // 场景名变了，重置缓存
+                if (_lastCheckedSceneName != currentSceneName)
+                {
+                    _cachedIsSiegeScene = null;
+                    _sceneCheckCount = 0;
+                }
+
+                _lastCheckedSceneName = currentSceneName;
+                _sceneCheckCount++;
+
+                var sceneName = currentSceneName?.ToLowerInvariant() ?? string.Empty;
                 
                 #if DEBUG
                 Logger.LogDebug("场景验证", 
@@ -110,7 +144,9 @@ namespace IronBloodSiege.Util
                     $"IsSallyOutBattle: {mission.IsSallyOutBattle}, " +
                     $"MissionTime: {mission.CurrentTime:F2}, " +
                     $"MissionEnded: {mission.MissionEnded}, " +
-                    $"BattleInRetreat: {mission.CheckIfBattleInRetreat()}");
+                    $"BattleInRetreat: {mission.CheckIfBattleInRetreat()}, " +
+                    $"检查次数: {_sceneCheckCount}, " +
+                    $"是否使用缓存: {_cachedIsSiegeScene.HasValue}");
                 #endif
 
                 // 允许Battle和Deployment两种模式
@@ -141,10 +177,19 @@ namespace IronBloodSiege.Util
                 }
                 #endif
 
+                // 缓存结果
+                if (_sceneCheckCount >= MAX_SCENE_CHECKS)
+                {
+                    _cachedIsSiegeScene = isValidSiegeScene;
+                }
+
                 return isValidSiegeScene;
             }
             catch
             {
+                _cachedIsSiegeScene = null;
+                _sceneCheckCount = 0;
+                _lastCheckedSceneName = null;
                 return false;
             }
         }
@@ -167,7 +212,8 @@ namespace IronBloodSiege.Util
         }
 
         /// <summary>
-        /// 安全获取攻击方士兵数量
+        /// 安全获取士兵数量，缓存减少重复计算
+        /// 获取攻城方和守城方的士兵数量
         /// </summary>
         public static int GetAttackerCount(Team team)
         {
@@ -175,24 +221,52 @@ namespace IronBloodSiege.Util
             {
                 if (team == null || !IsMissionValid()) return 0;
 
+                float currentTime = Mission.Current.CurrentTime;
+                
+                // 使用Team.Side作为缓存键，避免使用Team对象本身
+                int teamKey = (int)team.Side;
+                
+                if (currentTime - _lastCountUpdateTime >= COUNT_CACHE_DURATION)
+                {
+                    #if DEBUG
+                    Logger.LogDebug("GetAttackerCount", $"缓存过期（{COUNT_CACHE_DURATION}秒），清空缓存");
+                    #endif
+                    _teamCountCache.Clear();
+                    _lastCountUpdateTime = currentTime;
+                }
+
+                if (_teamCountCache.TryGetValue(teamKey, out int cachedCount))
+                {
+                    #if DEBUG
+                    Logger.LogDebug("GetAttackerCount", 
+                        $"使用缓存值 - Team: {team.Side}, " +
+                        $"Count: {cachedCount}, " +
+                        $"缓存时间: {currentTime - _lastCountUpdateTime:F2}秒");
+                    #endif
+                    return cachedCount;
+                }
+
                 var activeAgents = team.ActiveAgents;
                 if (activeAgents == null) return 0;
 
-                int totalCount = activeAgents.Count;
-                int validCount = activeAgents.Count(a => IsValidAgent(a));
+                int validCount = activeAgents.Count(agent => IsValidAgent(agent));
+                
+                _teamCountCache[teamKey] = validCount;
 
                 #if DEBUG
                 Logger.LogDebug("GetAttackerCount", 
-                    $"队伍: {team.Side}, " +
-                    $"总人数: {totalCount}, " +
-                    $"有效人数: {validCount}, " +
-                    $"无效人数: {totalCount - validCount}");
+                    $"计算新值 - Team: {team.Side}, " +
+                    $"Count: {validCount}, " +
+                    $"更新缓存时间: {currentTime:F2}");
                 #endif
 
                 return validCount;
             }
-            catch
+            catch (Exception ex)
             {
+                #if DEBUG
+                Logger.LogError("GetAttackerCount", ex);
+                #endif
                 return 0;
             }
         }

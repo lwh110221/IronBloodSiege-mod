@@ -39,6 +39,14 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
+    <Reference Include="0Harmony">
+      <HintPath>lib\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ButterLib">
+      <HintPath>lib\Bannerlord.ButterLib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="TaleWorlds.CampaignSystem">
       <HintPath>lib\TaleWorlds.CampaignSystem.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
@@ -83,6 +91,7 @@
   <ItemGroup>
     <Compile Include="src\SubModule.cs" />
     <Compile Include="src\Behavior\SiegeMoraleBehavior.cs" />
+    <Compile Include="src\Util\BehaviorCleanupHelper.cs" />
     <Compile Include="src\Setting\Settings.cs" />
     <Compile Include="src\Util\SafetyChecks.cs" />
     <Compile Include="src\Util\Constants.cs" />

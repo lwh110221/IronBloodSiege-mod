@@ -12,7 +12,7 @@ using TaleWorlds.Engine;
 
 namespace IronBloodSiege.Behavior
 {
-    public class SiegeMoraleBehavior : MissionBehavior
+    public class SiegeMoraleBehavior : MissionBehavior, IMissionAgentSpawnLogic
     {
         #region Fields
         // 使用HashSet存储Formation
@@ -46,6 +46,19 @@ namespace IronBloodSiege.Behavior
         // 添加缓存相关字段
         private readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();
         private const float CACHE_UPDATE_INTERVAL = 5f;
+
+        // 援军生成相关
+        private float _nextSpawnTime = 0f;
+        private const float SPAWN_INTERVAL = 1f;
+        private const float SPAWN_CHECK_INTERVAL = 0.2f;
+        private const int SPAWN_BATCH_SIZE = 50;
+        private const int MAX_TOTAL_ATTACKERS = 999999999;
+        private bool _isSpawnerEnabled = true;
+
+        // 撤退控制相关
+        private const float MAX_DISABLE_WAIT_TIME = 60f; // 最大等待时间
+        private const float MIN_CHECK_INTERVAL = 1f; // 最小检查间隔
+        private float _lastCheckTime = 0f;
         #endregion
 
         #region Properties
@@ -69,6 +82,9 @@ namespace IronBloodSiege.Behavior
                 
                 // 检查场景
                 _isSiegeScene = CheckIfSiegeScene();
+
+                // 设置初始生成时间
+                _nextSpawnTime = _battleStartTime;
             }
             catch (Exception ex)
             {
@@ -149,6 +165,12 @@ namespace IronBloodSiege.Behavior
                 }
 
                 AdjustTeamMorale(_attackerTeam, dt);
+
+                // 处理援军生成
+                if (_isSiegeScene && !_isDisabled && _isSpawnerEnabled)
+                {
+                    ProcessReinforcements(dt);
+                }
             }
             catch (Exception ex)
             {
@@ -165,13 +187,25 @@ namespace IronBloodSiege.Behavior
                 if (!_isSiegeScene || !SafetyChecks.IsValidAgent(agent) || 
                     agent.Team != Mission.Current?.AttackerTeam) return;
                     
-                // 设置初始士气
-                agent.SetMorale(Settings.Instance.MoraleThreshold);
+                // 设置最高士气
+                agent.SetMorale(100f);
+                
+                // 禁用撤退标志
+                agent.SetAgentFlags(agent.GetAgentFlags() & ~AgentFlag.CanRetreat);
+                
+                // 设置为进攻性AI行为
+                agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.DefensiveArrangementMove);
+                
+                // 设置防御性为0
+                agent.Defensiveness = 0f;
                 
                 // 如果mod未禁用，给新刷出的士兵设置进攻命令
                 if (!_isDisabled && agent.Formation != null)
                 {
-                    agent.Formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
+                    PreventRetreat(agent.Formation);
+                    
+                    // 立即更新agent的缓存值
+                    agent.UpdateCachedAndFormationValues(true, false);
                 }
             }
             catch (Exception ex)
@@ -530,6 +564,21 @@ namespace IronBloodSiege.Behavior
                 if (_isDisabled || !SafetyChecks.IsMissionValid() || attackerTeam == null)
                     return true;
 
+                float currentTime = Mission.Current.CurrentTime;
+                
+                // 检查最大等待时间
+                if (_pendingDisable && currentTime - _disableTimer > MAX_DISABLE_WAIT_TIME)
+                {
+                    return true;
+                }
+
+                // 检查最小间隔
+                if (currentTime - _lastCheckTime < MIN_CHECK_INTERVAL)
+                {
+                    return false;
+                }
+                _lastCheckTime = currentTime;
+
                 #if DEBUG
                 Util.Logger.LogDebug("撤退检查", $"检查撤退条件 - 攻击方数量: {attackerCount}, " +
                     $"上一次检测数量: {_lastCheckedAttackerCount}, " +
@@ -555,7 +604,7 @@ namespace IronBloodSiege.Behavior
                         InformationManager.DisplayMessage(new InformationMessage(
                             Constants.ReinforcementMessage.ToString(),
                             Constants.InfoColor));
-                        _lastCheckedAttackerCount = attackerCount; 
+                        _lastCheckedAttackerCount = attackerCount;
                         return false;
                     }
                 }
@@ -596,13 +645,13 @@ namespace IronBloodSiege.Behavior
                     }
                 }
 
-                // 只有在倒计时结束后才真正禁用
+                // 只有在倒计时结束且没有检测到援军时才允许撤退
                 return _pendingDisable && _disableTimer >= Settings.Instance.DisableDelay;
             }
             catch (Exception ex)
             {
                 HandleError("撤退检查", ex);
-                return true; // 出错时允许撤退
+                return false; // 出错时不允许撤退
             }
         }
         #endregion
@@ -617,7 +666,6 @@ namespace IronBloodSiege.Behavior
             {
                 if (!SafetyChecks.IsValidFormation(formation)) return;
                 
-                // 确保只对攻城方生效
                 if (formation.Team != _attackerTeam)
                 {
                     #if DEBUG
@@ -627,7 +675,6 @@ namespace IronBloodSiege.Behavior
                     return;
                 }
                          
-                // 如果玩家是攻城方，不使用SetControlledByAI
                 if (SafetyChecks.IsPlayerAttacker())
                 {
                     #if DEBUG
@@ -644,8 +691,10 @@ namespace IronBloodSiege.Behavior
                         $"编队类型: {formation.FormationIndex}");
                     #endif
 
-                    // 重置并设置行为
+                    // 重置Formation的AI行为
                     formation.AI.ResetBehaviorWeights();
+                    
+                    // 设置为进攻命令
                     formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
                     
                     // 确保Formation的AI会在下一个tick重新评估行为
@@ -654,15 +703,26 @@ namespace IronBloodSiege.Behavior
                     // 添加到已处理列表
                     _advancedFormations.Add(formation);
                     
-                    // 对Formation中的所有Agent进行处理
+                    // 处理所有单位
                     formation.ApplyActionOnEachUnit(agent =>
                     {
+                        // 停止当前的撤退状态
                         if (agent.IsRetreating())
                         {
                             agent.StopRetreating();
                         }
-                        // 设置最高士气，防止因士气低而触发撤退
+                        
+                        // 设置最高士气
                         agent.SetMorale(100f);
+                        
+                        // 禁用撤退标志
+                        agent.SetAgentFlags(agent.GetAgentFlags() & ~AgentFlag.CanRetreat);
+                        
+                        // 设置为进攻性AI行为
+                        agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.DefensiveArrangementMove);
+                        
+                        // 设置防御性为0,确保进攻
+                        agent.Defensiveness = 0f;
                     });
                 }
             }
@@ -881,6 +941,106 @@ namespace IronBloodSiege.Behavior
                 #endif
             }
         }
+        #endregion
+
+        #region Reinforcement Methods
+        private void ProcessReinforcements(float dt)
+        {
+            try
+            {
+                if (_attackerTeam == null || _currentMission == null) return;
+
+                float currentTime = _currentMission.CurrentTime;
+                if (currentTime - _lastCheckTime < SPAWN_CHECK_INTERVAL) return;
+                _lastCheckTime = currentTime;
+
+                if (currentTime < _nextSpawnTime) return;
+
+                // 获取生成逻辑组件
+                var spawnLogic = Mission.Current?.GetMissionBehavior<MissionAgentSpawnLogic>();
+                if (spawnLogic == null) return;
+
+                // 获取当前战场信息
+                int currentAttackerCount = spawnLogic.NumberOfActiveAttackerTroops;
+                int remainingAttackers = spawnLogic.NumberOfRemainingAttackerTroops;
+                int battleSize = spawnLogic.BattleSize;
+                
+                // 如果没有剩余可生成的士兵,直接返回
+                if (remainingAttackers <= 0) return;
+
+                // 计算当前战场还能容纳多少士兵
+                int maxAttackers = battleSize / 2; // 假设双方各占一半
+                int availableSpace = maxAttackers - currentAttackerCount;
+
+                // 如果没有可用空间,直接返回
+                if (availableSpace <= 0) return;
+
+                // 计算这次应该生成多少援军
+                int spawnCount = Math.Min(Math.Min(availableSpace, SPAWN_BATCH_SIZE), remainingAttackers);
+
+                if (spawnCount > 0)
+                {
+                    #if DEBUG
+                    Util.Logger.LogDebug("援军生成", 
+                        $"正在生成援军 - 当前数量: {currentAttackerCount}, " +
+                        $"本次生成: {spawnCount}, " +
+                        $"剩余可生成: {remainingAttackers}, " +
+                        $"战场容量: {battleSize}, " +
+                        $"可用空间: {availableSpace}");
+                    #endif
+
+                    // 启动生成器
+                    spawnLogic.StartSpawner(BattleSideEnum.Attacker);
+                    _nextSpawnTime = currentTime + SPAWN_INTERVAL;
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleError("援军生成处理", ex);
+            }
+        }
+
+        #region IMissionAgentSpawnLogic Implementation
+        public void StartSpawner(BattleSideEnum side)
+        {
+            if (side == BattleSideEnum.Attacker)
+            {
+                _isSpawnerEnabled = true;
+            }
+        }
+
+        public void StopSpawner(BattleSideEnum side)
+        {
+            if (side == BattleSideEnum.Attacker)
+            {
+                _isSpawnerEnabled = false;
+            }
+        }
+
+        public bool IsSideSpawnEnabled(BattleSideEnum side)
+        {
+            if (side == BattleSideEnum.Attacker)
+            {
+                return _isSpawnerEnabled;
+            }
+            return false;
+        }
+
+        public bool IsSideDepleted(BattleSideEnum side)
+        {
+            if (side == BattleSideEnum.Attacker)
+            {
+                int currentAttackerCount = SafetyChecks.GetAttackerCount(_attackerTeam);
+                return currentAttackerCount >= MAX_TOTAL_ATTACKERS;
+            }
+            return false;
+        }
+
+        public float GetReinforcementInterval()
+        {
+            return SPAWN_INTERVAL;
+        }
+        #endregion
         #endregion
     }
 } 

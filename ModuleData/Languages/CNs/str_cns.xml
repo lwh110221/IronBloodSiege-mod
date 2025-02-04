@@ -17,6 +17,11 @@
     <string id="ibs_enable_mod_hint" text="是否启用铁血攻城 -- tip：作者只是个学生，做的不好的地方请见谅" />
     <string id="ibs_enable_when_player_attacker" text="玩家为进攻方时启用" />
     <string id="ibs_enable_when_player_attacker_hint" text="当玩家在进攻方时是否启用铁血攻城效果" />
+
+    <!-- Reinforcement Settings -->
+    <string id="ibs_reinforcement_settings" text="援军设置" />
+    <string id="ibs_aggressive_reinforcement" text="启用激进援兵支援" />
+    <string id="ibs_aggressive_reinforcement_hint" text="开启后，援兵到达更快--兼容 RBM AI的Spawning修改（仅测试RBM）" />
     
     <!-- Retreat Settings -->
     <string id="ibs_retreat_conditions" text="不再铁血触发条件（注意：两种方式只能任选其一！）" />
@@ -36,11 +41,11 @@
     <string id="ibs_morale_boost_rate" text="士气提升速率" />
     <string id="ibs_morale_boost_rate_hint" text="攻城士兵每次提升士气的幅度 默认15" />
     <string id="ibs_disable_delay" text="铁血状态等待援兵时间" />
-    <string id="ibs_disable_delay_hint" text="从触发即将失去铁血状态条件到实际禁用铁血效果的延迟时间，次时间内如果没有援兵到达，攻城士兵完全失去铁血状态（秒） 默认20" />
+    <string id="ibs_disable_delay_hint" text="从触发即将失去铁血状态条件到实际禁用铁血效果的延迟时间，此时间内如果没有援兵到达，攻城士兵完全失去铁血状态（秒） 默认60" />
     
     <!-- Messages -->
     <string id="ibs_prevent_retreat" text="铁血攻城：已阻止士兵撤退！" />
-    <string id="ibs_morale_boost" text="铁血攻城：{COUNT}名士兵被鼓舞" />
+    <string id="ibs_morale_boost" text="铁血攻城：{COUNT}名攻城士兵被鼓舞" />
     <string id="ibs_retreat_message" text="铁血攻城：攻城部队人数不足，即将放弃铁血进攻" />
     <string id="ibs_reinforcement_message" text="铁血攻城：援兵抵达战场，攻城士兵将再次发起铁血进攻！" />
     

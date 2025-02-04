@@ -9,10 +9,9 @@ namespace IronBloodSiege.Util
         public static readonly Color WarningColor = Color.FromUint(0xFFFF00FF);
         public static readonly Color ErrorColor = Color.FromUint(0xFF0000FF);
         public static readonly Color InfoColor = Color.FromUint(0x00FF00FF);
-        public static readonly Color NormalColor = Color.FromUint(0x000000FF);
 
         // 消息模板
-        public static readonly TextObject MoraleBoostMessage = new TextObject("{=ibs_morale_boost}IronBlood Siege: {COUNT} troops were inspired");
+        public static readonly TextObject MoraleBoostMessage = new TextObject("{=ibs_morale_boost}IronBlood Siege: {COUNT} Atk troops were inspired");
         public static readonly TextObject PreventRetreatMessage = new TextObject("{=ibs_prevent_retreat}IronBlood Siege: Prevented troops from retreating!");
         public static readonly TextObject RetreatMessage = new TextObject("{=ibs_retreat_message}IronBlood Siege: Insufficient attacking forces, iron will disabled");
         public static readonly TextObject ErrorMessage = new TextObject("{=ibs_error_general}IronBlood Siege {CONTEXT} error: {MESSAGE}");

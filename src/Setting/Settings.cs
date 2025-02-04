@@ -24,10 +24,15 @@ namespace IronBloodSiege.Setting
         [SettingPropertyGroup("{=ibs_settings_basic}Basic Settings", GroupOrder = 0)]
         public bool EnableWhenPlayerAttacker { get; set; } = true;
 
+        [SettingPropertyBool("{=ibs_aggressive_reinforcement}Enable Aggressive Reinforcement", RequireRestart = false, 
+            HintText = "{=ibs_aggressive_reinforcement_hint}Faster reinforcement arrival - Compatible with RBM AI's Spawning modifications (RBM tested only)", Order = 1)]
+        [SettingPropertyGroup("{=ibs_reinforcement_settings}Reinforcement Settings", GroupOrder = 1)]
+        public bool EnableAggressiveReinforcement { get; set; } = false;
+
         [SettingPropertyBool("{=ibs_fixed_retreat}Fixed Number Iron Will Disable", RequireRestart = false, 
             HintText = "{=ibs_fixed_retreat_hint}Disable iron will when attacker troops fall below specified number", Order = 0)]
         [SettingPropertyGroup("{=ibs_retreat_conditions}Iron Will Disable Conditions (Note: Choose only one of the two methods!)", GroupOrder = 2)]
-        public bool EnableFixedRetreat { get; set; } = false;
+        public bool EnableFixedRetreat { get; set; } = true;
 
         [SettingPropertyInteger("{=ibs_retreat_threshold}Fixed Number Threshold", 10, 500, "0", RequireRestart = false, 
             HintText = "{=ibs_retreat_threshold_hint}Disable iron will when attacker troops fall below this number", Order = 1)]
@@ -45,9 +50,9 @@ namespace IronBloodSiege.Setting
         public float RatioThreshold { get; set; } = 0.7f;
 
         [SettingPropertyFloatingInteger("{=ibs_disable_delay}Disable Delay", 10f, 120f, "0", RequireRestart = false, 
-            HintText = "{=ibs_disable_delay_hint}Time to wait before disabling iron will (seconds). Default: 50", Order = 4)]
+            HintText = "{=ibs_disable_delay_hint}Time to wait before disabling iron will (seconds). Default: 60", Order = 4)]
         [SettingPropertyGroup("{=ibs_retreat_conditions}Iron Will Disable Conditions (Note: Choose only one of the two methods!)", GroupOrder = 1)]
-        public float DisableDelay { get; set; } = 50f;
+        public float DisableDelay { get; set; } = 60f;
 
         [SettingPropertyFloatingInteger("{=ibs_morale_threshold}Siege Troop Morale Threshold", 20f, 80f, "0", RequireRestart = false, 
             HintText = "{=ibs_morale_threshold_hint}Morale will be boosted when troops fall below this value. Default: 70", Order = 0)]
@@ -66,9 +71,10 @@ namespace IronBloodSiege.Setting
             RetreatThreshold = 100;
             EnableRatioRetreat = false;
             RatioThreshold = 0.7f;
-            DisableDelay = 50f;
+            DisableDelay = 60f;
             MoraleThreshold = 70f;
             MoraleBoostRate = 15f;
+            EnableAggressiveReinforcement = false;
         }
     }
 } 

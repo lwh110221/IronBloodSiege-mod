@@ -4,11 +4,8 @@ using System.Collections.Generic;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.MountAndBlade.ComponentInterfaces;
-using TaleWorlds.Localization;
 using IronBloodSiege.Util;
 using IronBloodSiege.Setting;
-using TaleWorlds.Engine;
 
 namespace IronBloodSiege.Behavior
 {
@@ -48,15 +45,15 @@ namespace IronBloodSiege.Behavior
         private const float CACHE_UPDATE_INTERVAL = 5f;
 
         // 援军生成相关
-        private float _nextSpawnTime = 0f;
-        private const float SPAWN_INTERVAL = 1f;
-        private const float SPAWN_CHECK_INTERVAL = 0.2f;
-        private const int SPAWN_BATCH_SIZE = 50;
-        private const int MAX_TOTAL_ATTACKERS = 999999999;
-        private bool _isSpawnerEnabled = true;
+        private float _nextSpawnTime = 0f;                     // 下次生成援军的时间
+        private const float SPAWN_INTERVAL = 5f;               // 援军生成的时间间隔
+        private const float SPAWN_CHECK_INTERVAL = 0.5f;       // 检查是否生成援军的时间间隔
+        private const int SPAWN_BATCH_SIZE = 50;               // 每次生成援军的数量
+        private const int MAX_TOTAL_ATTACKERS = 999999999;     // 攻击方最大数量限制
+        private bool _isSpawnerEnabled = true;                 // 标记是否启用援军修改
 
         // 撤退控制相关
-        private const float MAX_DISABLE_WAIT_TIME = 60f; // 最大等待时间
+        private const float MAX_DISABLE_WAIT_TIME = 120f; // 最大等待时间
         private const float MIN_CHECK_INTERVAL = 1f; // 最小检查间隔
         private float _lastCheckTime = 0f;
         #endregion
@@ -948,6 +945,9 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
+                // 如果未启用激进援军设置，直接返回
+                if (!Settings.Instance.EnableAggressiveReinforcement) return;
+
                 if (_attackerTeam == null || _currentMission == null) return;
 
                 float currentTime = _currentMission.CurrentTime;

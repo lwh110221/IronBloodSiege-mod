@@ -16,6 +16,11 @@
     <string id="ibs_enable_mod_hint" text="Whether to enable IronBlood Siege - Note: Author is just a student, please be kind"/>
     <string id="ibs_enable_when_player_attacker" text="Enable When Player is Attacker"/>
     <string id="ibs_enable_when_player_attacker_hint" text="Whether to enable iron will effect when player is on the attacking side"/>
+
+    <!-- 援军设置 -->
+    <string id="ibs_reinforcement_settings" text="Reinforcement Settings"/>
+    <string id="ibs_aggressive_reinforcement" text="Enable Aggressive Reinforcement" />
+    <string id="ibs_aggressive_reinforcement_hint" text="Faster reinforcement arrival - Compatible with RBM AI's Spawning modifications (RBM tested only)" />
     
     <!-- 撤退设置 -->
     <string id="ibs_retreat_conditions" text="Iron Will Disable Conditions (Note: Choose only one of the two methods!)"/>
@@ -35,7 +40,7 @@
     <string id="ibs_morale_boost_rate" text="Morale Boost Rate"/>
     <string id="ibs_morale_boost_rate_hint" text="Amount of morale boost per update. Default: 15"/>
     <string id="ibs_disable_delay" text="Iron Will Waiting Time for Reinforcements"/>
-    <string id="ibs_disable_delay_hint" text="The delay time from triggering the loss of Iron Will state to actually disabling the Iron Will effect. If no reinforcements arrive during this time, siege troops will completely lose their Iron Will state (seconds). Default: 15"/>
+    <string id="ibs_disable_delay_hint" text="The delay time from triggering the loss of Iron Will state to actually disabling the Iron Will effect. If no reinforcements arrive during this time, siege troops will completely lose their Iron Will state (seconds). Default: 60"/>
     
     <!-- 消息 -->
     <string id="ibs_prevent_retreat" text="IronBlood Siege: Prevented troops from retreating!"/>

@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.ComponentInterfaces;
+using TaleWorlds.Localization;
 using IronBloodSiege.Util;
 using IronBloodSiege.Setting;
+using TaleWorlds.Engine;
 
 namespace IronBloodSiege.Behavior
 {
@@ -30,6 +33,7 @@ namespace IronBloodSiege.Behavior
         private bool _pendingDisable = false;    // 用于标记是否处于等待禁用状态
         private float _disableTimer = 0f;        // 禁用计时器
         private int _initialAttackerCount = 0;   // 开始计时时的攻击方士兵数量
+        private int _lastCheckedAttackerCount = 0; // 上一次检测到的攻击方数量
         private float _lastMoraleUpdateTime = 0f; // 最后一次更新士气的时间
         private float _lastMessageTime = 0f; // 消息时间
         private float _lastRetreatMessageTime = 0f; // 撤退消息时间
@@ -41,7 +45,6 @@ namespace IronBloodSiege.Behavior
 
         // 添加缓存相关字段
         private readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();
-        private float _lastCacheUpdateTime = 0f;
         private const float CACHE_UPDATE_INTERVAL = 5f;
         #endregion
 
@@ -162,7 +165,14 @@ namespace IronBloodSiege.Behavior
                 if (!_isSiegeScene || !SafetyChecks.IsValidAgent(agent) || 
                     agent.Team != Mission.Current?.AttackerTeam) return;
                     
+                // 设置初始士气
                 agent.SetMorale(Settings.Instance.MoraleThreshold);
+                
+                // 如果mod未禁用，给新刷出的士兵设置进攻命令
+                if (!_isDisabled && agent.Formation != null)
+                {
+                    agent.Formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
+                }
             }
             catch (Exception ex)
             {
@@ -368,6 +378,7 @@ namespace IronBloodSiege.Behavior
             _pendingDisable = false;
             _disableTimer = 0f;
             _initialAttackerCount = 0;
+            _lastCheckedAttackerCount = 0;
             _lastMoraleUpdateTime = 0f;
             _lastMessageTime = 0f;
             _lastRetreatMessageTime = 0f;
@@ -400,7 +411,8 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
-                if (team == null || team != _attackerTeam) return;
+                // 确保只对攻城方生效
+                if (team == null || team != _attackerTeam || team.IsDefender) return;
 
                 float currentTime = _currentMission.CurrentTime;
                 
@@ -420,9 +432,6 @@ namespace IronBloodSiege.Behavior
 
                 _lastMoraleUpdateTime = currentTime;
                 
-                float moraleThreshold = Settings.Instance.MoraleThreshold;
-                float moraleBoostRate = Settings.Instance.MoraleBoostRate;
-                
                 int attackerCount = SafetyChecks.GetAttackerCount(team);
                 
                 #if DEBUG
@@ -437,22 +446,7 @@ namespace IronBloodSiege.Behavior
                     return;
                 }
 
-                float strengthRatio = 2.0f;
-                if (_defenderTeam != null)
-                {
-                    int defenderCount = SafetyChecks.GetAttackerCount(_defenderTeam);
-                    if (defenderCount > 0)
-                    {
-                        strengthRatio = (float)attackerCount / defenderCount;
-                    }
-                }
-
-                if (strengthRatio >= 1.5f)
-                {
-                    moraleThreshold *= 0.6f;
-                }
-
-                int boostedCount = UpdateAgentsMorale(team, moraleThreshold, moraleBoostRate);
+                int boostedCount = UpdateAgentsMorale(team, Settings.Instance.MoraleThreshold, Settings.Instance.MoraleBoostRate);
                 
                 if (boostedCount >= 10 && currentTime - _lastMessageTime >= Constants.MESSAGE_COOLDOWN)
                 {
@@ -488,6 +482,8 @@ namespace IronBloodSiege.Behavior
             {
                 Formation formation = formationGroup.Key;
                 if (formation?.PlayerOwner != null) continue;
+                
+                bool hasRetreatingUnits = false;
                 foreach (Agent agent in formationGroup)
                 {
                     try
@@ -495,12 +491,8 @@ namespace IronBloodSiege.Behavior
                         float oldMorale = agent.GetMorale();
                         if (oldMorale < moraleThreshold || agent.IsRetreating())
                         {
+                            // 直接使用设置的提升值
                             float targetMorale = oldMorale + moraleBoostRate;
-                            if (agent.IsRetreating())
-                            {
-                                targetMorale += moraleBoostRate * 0.5f;
-                            }
-                            
                             targetMorale = Math.Min(targetMorale, 100f);
                             agent.SetMorale(targetMorale);
 
@@ -508,11 +500,12 @@ namespace IronBloodSiege.Behavior
                             {
                                 boostedCount++;
                             }
-                        }
 
-                        if (agent.IsRetreating())
-                        {
-                            agent.StopRetreating();
+                            if (agent.IsRetreating())
+                            {
+                                hasRetreatingUnits = true;
+                                agent.StopRetreating();
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -522,7 +515,7 @@ namespace IronBloodSiege.Behavior
                 }
 
                 // 对每个Formation只设置一次命令
-                if (formation != null && formationGroup.Any(a => a.IsRetreating()))
+                if (formation != null && hasRetreatingUnits)
                 {
                     PreventRetreat(formation);
                 }
@@ -539,9 +532,36 @@ namespace IronBloodSiege.Behavior
 
                 #if DEBUG
                 Util.Logger.LogDebug("撤退检查", $"检查撤退条件 - 攻击方数量: {attackerCount}, " +
-                    $"启用固定撤退: {Settings.Instance.EnableFixedRetreat}, 撤退阈值: {Settings.Instance.RetreatThreshold}, " +
+                    $"上一次检测数量: {_lastCheckedAttackerCount}, " +
+                    $"启用固定撤退: {Settings.Instance.EnableFixedRetreat}, " +
+                    $"撤退阈值: {Settings.Instance.RetreatThreshold}, " +
                     $"启用比例撤退: {Settings.Instance.EnableRatioRetreat}");
                 #endif
+
+                // 如果正在等待禁用，检查是否有援军到达
+                if (_pendingDisable)
+                {
+                    // 只要当前数量比上次检测的数量多，就认为有援军到达
+                    if (attackerCount > _lastCheckedAttackerCount)
+                    {
+                        #if DEBUG
+                        Util.Logger.LogDebug("撤退检查", 
+                            $"检测到援军到达 - 当前数量: {attackerCount}, " +
+                            $"上一次检测数量: {_lastCheckedAttackerCount}, " +
+                            $"增加数量: {attackerCount - _lastCheckedAttackerCount}");
+                        #endif
+                        _pendingDisable = false;
+                        _disableTimer = 0f;
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            Constants.ReinforcementMessage.ToString(),
+                            Constants.InfoColor));
+                        _lastCheckedAttackerCount = attackerCount; 
+                        return false;
+                    }
+                }
+
+                // 更新上一次检测的数量
+                _lastCheckedAttackerCount = attackerCount;
 
                 // 优先使用固定数量触发
                 if (Settings.Instance.EnableFixedRetreat)
@@ -551,10 +571,9 @@ namespace IronBloodSiege.Behavior
                     Util.Logger.LogDebug("撤退检查", $"固定阈值检查 - 攻击方数量: {attackerCount} <= 阈值: {Settings.Instance.RetreatThreshold} = {shouldRetreat}");
                     #endif
                     
-                    if (shouldRetreat)
+                    if (shouldRetreat && !_pendingDisable)
                     {
                         StartDisableTimer("达到固定阈值");
-                        return true;
                     }
                 }
                 // 如果没有启用固定数量，才检查比例触发
@@ -571,22 +590,14 @@ namespace IronBloodSiege.Behavior
                         $"是否撤退: {shouldRetreat}");
                     #endif
                     
-                    if (shouldRetreat)
+                    if (shouldRetreat && !_pendingDisable)
                     {
                         StartDisableTimer("达到比例阈值");
-                        return true;
                     }
                 }
 
-                if (_pendingDisable)
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("撤退检查", "取消待禁用状态");
-                    #endif
-                    _pendingDisable = false;
-                    _disableTimer = 0f;
-                }
-                return false;
+                // 只有在倒计时结束后才真正禁用
+                return _pendingDisable && _disableTimer >= Settings.Instance.DisableDelay;
             }
             catch (Exception ex)
             {
@@ -598,13 +609,23 @@ namespace IronBloodSiege.Behavior
 
         #region Formation Methods
         /// <summary>
-        /// 防止撤退
+        /// 防止撤退并恢复Formation的移动
         /// </summary>
         private void PreventRetreat(Formation formation)
         {
             try
             {
                 if (!SafetyChecks.IsValidFormation(formation)) return;
+                
+                // 确保只对攻城方生效
+                if (formation.Team != _attackerTeam)
+                {
+                    #if DEBUG
+                    Util.Logger.LogDebug("防止撤退", 
+                        $"跳过非攻城方Formation: {formation.FormationIndex}");
+                    #endif
+                    return;
+                }
                          
                 // 如果玩家是攻城方，不使用SetControlledByAI
                 if (SafetyChecks.IsPlayerAttacker())
@@ -623,8 +644,26 @@ namespace IronBloodSiege.Behavior
                         $"编队类型: {formation.FormationIndex}");
                     #endif
 
-                    formation.SetControlledByAI(true, false);
+                    // 重置并设置行为
+                    formation.AI.ResetBehaviorWeights();
+                    formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
+                    
+                    // 确保Formation的AI会在下一个tick重新评估行为
+                    formation.IsAITickedAfterSplit = false;
+                    
+                    // 添加到已处理列表
                     _advancedFormations.Add(formation);
+                    
+                    // 对Formation中的所有Agent进行处理
+                    formation.ApplyActionOnEachUnit(agent =>
+                    {
+                        if (agent.IsRetreating())
+                        {
+                            agent.StopRetreating();
+                        }
+                        // 设置最高士气，防止因士气低而触发撤退
+                        agent.SetMorale(100f);
+                    });
                 }
             }
             catch (Exception ex)
@@ -640,7 +679,23 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
-                formation?.SetControlledByAI(true, false);
+                if (formation == null) return;
+                
+                // 确保只对攻城方生效
+                if (formation.Team != _attackerTeam) return;
+                
+                // 重置所有行为权重
+                formation.AI.ResetBehaviorWeights();
+                
+                // 恢复AI控制
+                formation.SetControlledByAI(true, false);
+                
+                // 如果Formation处于停止状态，设置为前进命令
+                var currentOrder = formation.GetReadonlyMovementOrderReference();
+                if (currentOrder.OrderEnum == MovementOrder.MovementOrderEnum.Stop)
+                {
+                    formation.SetMovementOrder(MovementOrder.MovementOrderAdvance);
+                }
             }
             catch (Exception ex)
             {
@@ -701,40 +756,50 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
+                if (!_pendingDisable || !SafetyChecks.IsMissionValid()) return;
+
                 _disableTimer += dt;
                 
-                // 检查增援情况
-                int currentAttackerCount = SafetyChecks.GetAttackerCount(Mission.Current.AttackerTeam);
-                if (currentAttackerCount > _initialAttackerCount)
+                // 每秒检查一次是否有援军到达
+                if (_disableTimer % 1f < dt)
                 {
-                    _pendingDisable = false;
-                    _disableTimer = 0f;
-                    
-                    if (Mission.Current.CurrentTime - _battleStartTime > Constants.BATTLE_START_GRACE_PERIOD)
+                    int currentAttackerCount = SafetyChecks.GetAttackerCount(Mission.Current.AttackerTeam);
+                    // 只要当前数量比上次检测的数量多，就认为有援军到达
+                    if (currentAttackerCount > _lastCheckedAttackerCount)
                     {
+                        #if DEBUG
+                        Util.Logger.LogDebug("禁用计时", 
+                            $"检测到援军到达 - 当前数量: {currentAttackerCount}, " +
+                            $"上一次检测数量: {_lastCheckedAttackerCount}, " +
+                            $"增加数量: {currentAttackerCount - _lastCheckedAttackerCount}");
+                        #endif
+                        _pendingDisable = false;
+                        _disableTimer = 0f;
                         InformationManager.DisplayMessage(new InformationMessage(
                             Constants.ReinforcementMessage.ToString(),
                             Constants.InfoColor));
+                        _lastCheckedAttackerCount = currentAttackerCount;
+                        
+                        // 给所有Formation下达进攻命令
+                        foreach (var formation in _attackerTeam.FormationsIncludingEmpty.Where(f => f.CountOfUnits > 0))
+                        {
+                            PreventRetreat(formation);  // 使用PreventRetreat来处理每个Formation
+                        }
+                        return;
                     }
-                    return;
+                    // 更新上一次检测的数量
+                    _lastCheckedAttackerCount = currentAttackerCount;
                 }
 
-                // 检查是否达到禁用延迟
+                // 只有在倒计时结束且没有检测到援军时才禁用mod
                 if (_disableTimer >= Settings.Instance.DisableDelay)
                 {
-                    if (ShouldAllowRetreat(Mission.Current.AttackerTeam, currentAttackerCount))
-                    {
-                        DisableMod("禁用计时过期");
-                    }
-                    
-                    _pendingDisable = false;
-                    _disableTimer = 0f;
+                    DisableMod("禁用计时结束，无援军到达");
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                _pendingDisable = false;
-                _disableTimer = 0f;
+                HandleError("禁用计时处理", ex);
             }
         }
 

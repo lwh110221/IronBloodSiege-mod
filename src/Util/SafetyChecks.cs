@@ -14,7 +14,7 @@ namespace IronBloodSiege.Util
         private static string _lastCheckedSceneName = null;
         private static readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();
         private static float _lastCountUpdateTime = 0f;
-        private const float COUNT_CACHE_DURATION = 1f; // 1秒缓存时间
+        private const float COUNT_CACHE_DURATION = 1f;  // 缓存时间
 
         /// <summary>
         /// 检查Agent是否为有效的AI控制的战斗单位
@@ -92,6 +92,9 @@ namespace IronBloodSiege.Util
                     _cachedIsSiegeScene = null;
                     _sceneCheckCount = 0;
                     _lastCheckedSceneName = null;
+                    #if DEBUG
+                    Logger.LogDebug("场景验证", "Mission无效");
+                    #endif
                     return false;
                 }
 
@@ -111,6 +114,9 @@ namespace IronBloodSiege.Util
                 {
                     _cachedIsSiegeScene = null;
                     _sceneCheckCount = 0;
+                    #if DEBUG
+                    Logger.LogDebug("场景验证", $"场景名称变化 - 旧: {_lastCheckedSceneName}, 新: {currentSceneName}");
+                    #endif
                 }
 
                 _lastCheckedSceneName = currentSceneName;
@@ -120,12 +126,12 @@ namespace IronBloodSiege.Util
                 
                 #if DEBUG
                 Logger.LogDebug("场景验证", 
-                    $"检查场景 - 模式: {mission.Mode}, " +
+                    $"检查场景 - " +
+                    $"模式: {mission.Mode}, " +
                     $"场景: {sceneName}, " +
                     $"有防守方: {mission.DefenderTeam != null}, " +
                     $"有进攻方: {mission.AttackerTeam != null}, " +
-                    $"是攻城战: {mission.IsSiegeBattle}, " +
-                    $"IsSallyOutBattle: {mission.IsSallyOutBattle}, " +
+                    $"战斗类型: {mission.CombatType}, " +
                     $"MissionTime: {mission.CurrentTime:F2}, " +
                     $"MissionEnded: {mission.MissionEnded}, " +
                     $"BattleInRetreat: {mission.CheckIfBattleInRetreat()}, " +
@@ -133,31 +139,62 @@ namespace IronBloodSiege.Util
                     $"是否使用缓存: {_cachedIsSiegeScene.HasValue}");
                 #endif
 
-                // 允许Battle和Deployment两种模式
+                // 允许Battle、Deployment和StartUp三种模式
                 bool isValidMode = mission.Mode == MissionMode.Battle || 
-                                 mission.Mode == MissionMode.Deployment;
+                                 mission.Mode == MissionMode.Deployment ||
+                                 mission.Mode == MissionMode.StartUp;
 
-                bool hasValidSceneName = !string.IsNullOrEmpty(sceneName) &&
-                                       (sceneName.Contains("siege") || 
-                                        sceneName.Contains("castle") ||
-                                        sceneName.Contains("town") ||
-                                        mission.IsSiegeBattle ||
-                                        mission.IsSallyOutBattle);
+                // 检查场景名称
+                bool hasValidSceneName = !string.IsNullOrEmpty(sceneName);
+                
+                // 检查场景名称是否包含攻城战关键字
+                bool hasSiegeKeyword = sceneName.Contains("siege");
+                bool hasCastleKeyword = sceneName.Contains("castle");
+                bool hasTownKeyword = sceneName.Contains("town");
+                
+                // 检查是否为战斗场景
+                bool isValidBattleType = hasValidSceneName && 
+                                       (hasSiegeKeyword || hasCastleKeyword || hasTownKeyword) &&
+                                       mission.CombatType == Mission.MissionCombatType.Combat;
 
+                #if DEBUG
+                if (hasValidSceneName && (hasSiegeKeyword || hasCastleKeyword || hasTownKeyword))
+                {
+                    Logger.LogDebug("场景验证", 
+                        $"检查战斗类型 - " +
+                        $"包含Siege关键字: {hasSiegeKeyword}, " +
+                        $"包含Castle关键字: {hasCastleKeyword}, " +
+                        $"包含Town关键字: {hasTownKeyword}, " +
+                        $"战斗类型: {mission.CombatType}, " +
+                        $"当前模式: {mission.Mode}");
+                }
+                #endif
+
+                // 检查双方队伍
                 bool hasValidTeams = mission.DefenderTeam != null &&
                                    mission.AttackerTeam != null;
 
-                bool isValidSiegeScene = isValidMode && hasValidSceneName && hasValidTeams;
+                // 检查战斗状态
+                bool isValidBattleState = !mission.MissionEnded && 
+                                        !mission.CheckIfBattleInRetreat();
+
+                bool isValidSiegeScene = isValidMode && 
+                                       isValidBattleType &&
+                                       hasValidTeams && 
+                                       isValidBattleState;
 
                 #if DEBUG
                 if (!isValidSiegeScene)
                 {
                     Logger.LogDebug("场景验证", 
-                        $"场景验证失败 - 允许模式: {isValidMode}, " +
-                        $"场景名称: {hasValidSceneName}, " +
+                        $"场景验证失败 - " +
+                        $"允许模式: {isValidMode}, " +
+                        $"有效战斗场景: {isValidBattleType}, " +
                         $"队伍: {hasValidTeams}, " +
+                        $"战斗状态: {isValidBattleState}, " +
                         $"当前模式: {mission.Mode}, " +
-                        $"场景名称: {sceneName}");
+                        $"场景名称: {sceneName}, " +
+                        $"战斗类型: {mission.CombatType}");
                 }
                 #endif
 
@@ -169,8 +206,11 @@ namespace IronBloodSiege.Util
 
                 return isValidSiegeScene;
             }
-            catch
+            catch (Exception ex)
             {
+                #if DEBUG
+                Logger.LogError("场景验证", ex);
+                #endif
                 _cachedIsSiegeScene = null;
                 _sceneCheckCount = 0;
                 _lastCheckedSceneName = null;

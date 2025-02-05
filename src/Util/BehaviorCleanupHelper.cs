@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.MountAndBlade;
+using IronBloodSiege.Behavior;
 
 namespace IronBloodSiege.Util
 {
@@ -46,37 +47,64 @@ namespace IronBloodSiege.Util
         }
 
         /// <summary>
-        /// 清理行为状态
+        /// 清理行为组件的状态
         /// </summary>
-        public static void CleanupBehaviorState(ref bool isCleanedUp, 
-                                              ref float lastMoraleUpdateTime,
-                                              ref float lastMessageTime, 
-                                              ref float lastRetreatMessageTime,
-                                              ref int initialAttackerCount,
-                                              ref Mission currentMission,
-                                              ref string currentSceneName,
-                                              ref Team attackerTeam,
-                                              ref Team defenderTeam,
-                                              ref HashSet<Formation> formations)
+        public static void CleanupBehaviorState(
+            ref bool isCleanedUp,
+            ref float lastRetreatMessageTime,
+            ref int initialAttackerCount,
+            ref Mission currentMission,
+            ref string currentSceneName,
+            ref Team attackerTeam,
+            ref Team defenderTeam,
+            ref SiegeFormationBehavior formationBehavior,
+            ref SiegeMoraleManagerBehavior moraleManagerBehavior,
+            ref SiegeReinforcementBehavior reinforcementBehavior)
         {
-            if (!isCleanedUp)
+            try
             {
-                lastMoraleUpdateTime = 0f;
-                lastMessageTime = 0f;
-                lastRetreatMessageTime = 0f;
-                initialAttackerCount = 0;
-                currentMission = null;
-                currentSceneName = null;
-                attackerTeam = null;
-                defenderTeam = null;
-                
-                if (formations != null)
+                if (!isCleanedUp)
                 {
-                    formations.Clear();
-                    formations = null;
+                    #if DEBUG
+                    Logger.LogDebug("清理", "开始清理行为组件状态");
+                    #endif
+
+                    // 清理基本状态
+                    lastRetreatMessageTime = 0f;
+                    initialAttackerCount = 0;
+                    currentMission = null;
+                    currentSceneName = string.Empty;
+                    attackerTeam = null;
+                    defenderTeam = null;
+
+                    // 清理其他行为组件引用
+                    if (formationBehavior != null)
+                    {
+                        formationBehavior = null;
+                    }
+
+                    if (moraleManagerBehavior != null)
+                    {
+                        moraleManagerBehavior = null;
+                    }
+
+                    if (reinforcementBehavior != null)
+                    {
+                        reinforcementBehavior = null;
+                    }
+
+                    isCleanedUp = true;
+
+                    #if DEBUG
+                    Logger.LogDebug("清理", "行为组件状态清理完成");
+                    #endif
                 }
-                
-                isCleanedUp = true;
+            }
+            catch (Exception ex)
+            {
+                #if DEBUG
+                Logger.LogError("清理", ex);
+                #endif
             }
         }
 

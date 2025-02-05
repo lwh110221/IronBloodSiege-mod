@@ -57,9 +57,6 @@ namespace IronBloodSiege
                 InformationManager.DisplayMessage(new InformationMessage(
                     new TextObject("{=ibs_mod_loaded}IronBlood Siege - Loaded Successfully! Author: Ahao").ToString(), 
                     Constants.InfoColor));
-                InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=ibs_mod_email}email: ahao221x@gmail.com").ToString(), 
-                    Constants.InfoColor));
             }
             catch (Exception ex)
             {
@@ -82,16 +79,29 @@ namespace IronBloodSiege
                     Util.Logger.LogDebug("OnBeforeMissionBehaviorInitialize", 
                         $"Mission Mode: {mission.Mode}, " +
                         $"Scene Name: {mission.SceneName}, " +
-                        $"IsSiegeBattle: {mission.IsSiegeBattle}, " +
-                        $"IsSallyOutBattle: {mission.IsSallyOutBattle}");
+                        $"Combat Type: {mission.CombatType}, " +
+                        $"Has Defender: {mission.DefenderTeam != null}, " +
+                        $"Has Attacker: {mission.AttackerTeam != null}");
                     #endif
 
-                    mission.AddMissionBehavior(new SiegeMoraleBehavior());
+                    // 按照依赖关系顺序添加行为
+                    mission.AddMissionBehavior(new SiegeReinforcementBehavior());  // 援军生成必须最先添加
+                    mission.AddMissionBehavior(new SiegeMoraleBehavior());         // 主协调者
+                    mission.AddMissionBehavior(new SiegeFormationBehavior());      // Formation控制
+                    mission.AddMissionBehavior(new SiegeMoraleManagerBehavior());  // 士气管理
+
                     if (Settings.Instance.IsEnabled)
                     {
                         InformationManager.DisplayMessage(new InformationMessage(
                             new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
                             Constants.InfoColor));
+                            
+                        #if DEBUG
+                        Util.Logger.LogDebug("初始化", 
+                            $"Mod已启用 - " +
+                            $"激进援军: {Settings.Instance.EnableAggressiveReinforcement}, " +
+                            $"玩家攻方启用: {Settings.Instance.EnableWhenPlayerAttacker}");
+                        #endif
                     }
                     else 
                     {

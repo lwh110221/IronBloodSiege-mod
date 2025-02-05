@@ -10,11 +10,42 @@ namespace IronBloodSiege.Util
     {
         private static bool? _cachedIsSiegeScene = null;
         private static int _sceneCheckCount = 0;
-        private static readonly int MAX_SCENE_CHECKS = 3;
+        private static readonly int MAX_SCENE_CHECKS = 2;  // 减少检查次数
         private static string _lastCheckedSceneName = null;
+        private static float _lastSceneCheckTime = 0f;
         private static readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();
-        private static float _lastCountUpdateTime = 0f;
-        private const float COUNT_CACHE_DURATION = 1f;  // 缓存时间
+        private static float _lastCountUpdateTime = -1f;  // 初始化为-1
+        private const float COUNT_CACHE_DURATION = 1f;    // 缓存时间
+        private const float SCENE_CHECK_TIMEOUT = 5f;     // 场景检查超时时间
+        private static bool _isFirstCheck = true;         // 添加首次检查标记
+        private static bool _isNewBattle = true;          // 添加新战斗标记
+
+        /// <summary>
+        /// 重置场景检查状态
+        /// </summary>
+        private static void ResetSceneCheck()
+        {
+            _cachedIsSiegeScene = null;
+            _sceneCheckCount = 0;
+            _lastCheckedSceneName = null;
+            _lastSceneCheckTime = 0f;
+            _isFirstCheck = true;
+            _isNewBattle = true;
+            ResetCountCache();
+        }
+
+        /// <summary>
+        /// 重置数量缓存
+        /// </summary>
+        private static void ResetCountCache()
+        {
+            _teamCountCache.Clear();
+            _lastCountUpdateTime = -1f;
+            
+            #if DEBUG
+            Logger.LogDebug("缓存重置", "重置数量缓存和时间");
+            #endif
+        }
 
         /// <summary>
         /// 检查Agent是否为有效的AI控制的战斗单位
@@ -89,9 +120,7 @@ namespace IronBloodSiege.Util
             {
                 if (!IsMissionValid()) 
                 {
-                    _cachedIsSiegeScene = null;
-                    _sceneCheckCount = 0;
-                    _lastCheckedSceneName = null;
+                    ResetSceneCheck();
                     #if DEBUG
                     Logger.LogDebug("场景验证", "Mission无效");
                     #endif
@@ -100,27 +129,34 @@ namespace IronBloodSiege.Util
 
                 var mission = Mission.Current;
                 var currentSceneName = mission.SceneName;
+                var currentTime = mission.CurrentTime;
 
-                // 已经有缓存结果且场景名没变，直接返回
-                if (_cachedIsSiegeScene.HasValue && 
-                    _sceneCheckCount >= MAX_SCENE_CHECKS && 
-                    _lastCheckedSceneName == currentSceneName)
+                // 场景名变了或者超时，重置缓存
+                if (_lastCheckedSceneName != currentSceneName || 
+                    (currentTime - _lastSceneCheckTime) > SCENE_CHECK_TIMEOUT ||
+                    _isFirstCheck)  // 首次检查时也重置
                 {
-                    return _cachedIsSiegeScene.Value;
-                }
-
-                // 场景名变了，重置缓存
-                if (_lastCheckedSceneName != currentSceneName)
-                {
-                    _cachedIsSiegeScene = null;
-                    _sceneCheckCount = 0;
+                    ResetSceneCheck();
                     #if DEBUG
-                    Logger.LogDebug("场景验证", $"场景名称变化 - 旧: {_lastCheckedSceneName}, 新: {currentSceneName}");
+                    if (_isFirstCheck)
+                    {
+                        Logger.LogDebug("场景验证", "首次检查，重置所有状态");
+                    }
+                    else if (_lastCheckedSceneName != currentSceneName)
+                    {
+                        Logger.LogDebug("场景验证", $"场景名称变化 - 旧: {_lastCheckedSceneName}, 新: {currentSceneName}");
+                    }
+                    else
+                    {
+                        Logger.LogDebug("场景验证", $"场景检查超时 - 上次检查时间: {_lastSceneCheckTime:F2}, 当前时间: {currentTime:F2}");
+                    }
                     #endif
                 }
 
                 _lastCheckedSceneName = currentSceneName;
+                _lastSceneCheckTime = currentTime;
                 _sceneCheckCount++;
+                _isFirstCheck = false;
 
                 var sceneName = currentSceneName?.ToLowerInvariant() ?? string.Empty;
                 
@@ -132,20 +168,25 @@ namespace IronBloodSiege.Util
                     $"有防守方: {mission.DefenderTeam != null}, " +
                     $"有进攻方: {mission.AttackerTeam != null}, " +
                     $"战斗类型: {mission.CombatType}, " +
-                    $"MissionTime: {mission.CurrentTime:F2}, " +
+                    $"MissionTime: {currentTime:F2}, " +
                     $"MissionEnded: {mission.MissionEnded}, " +
                     $"BattleInRetreat: {mission.CheckIfBattleInRetreat()}, " +
                     $"检查次数: {_sceneCheckCount}, " +
                     $"是否使用缓存: {_cachedIsSiegeScene.HasValue}");
                 #endif
 
-                // 允许Battle、Deployment和StartUp三种模式
-                bool isValidMode = mission.Mode == MissionMode.Battle || 
-                                 mission.Mode == MissionMode.Deployment ||
-                                 mission.Mode == MissionMode.StartUp;
-
                 // 检查场景名称
                 bool hasValidSceneName = !string.IsNullOrEmpty(sceneName);
+                
+                // 明确排除竞技场场景
+                if (hasValidSceneName && sceneName.Contains("arena"))
+                {
+                    #if DEBUG
+                    Logger.LogDebug("场景验证", "竞技场场景，跳过验证");
+                    #endif
+                    ResetSceneCheck();
+                    return false;
+                }
                 
                 // 检查场景名称是否包含攻城战关键字
                 bool hasSiegeKeyword = sceneName.Contains("siege");
@@ -157,18 +198,57 @@ namespace IronBloodSiege.Util
                                        (hasSiegeKeyword || hasCastleKeyword || hasTownKeyword) &&
                                        mission.CombatType == Mission.MissionCombatType.Combat;
 
-                #if DEBUG
-                if (hasValidSceneName && (hasSiegeKeyword || hasCastleKeyword || hasTownKeyword))
+                // 如果是StartUp模式，需要等待一段时间让场景完全加载
+                if (mission.Mode == MissionMode.StartUp)
                 {
-                    Logger.LogDebug("场景验证", 
-                        $"检查战斗类型 - " +
-                        $"包含Siege关键字: {hasSiegeKeyword}, " +
-                        $"包含Castle关键字: {hasCastleKeyword}, " +
-                        $"包含Town关键字: {hasTownKeyword}, " +
-                        $"战斗类型: {mission.CombatType}, " +
-                        $"当前模式: {mission.Mode}");
+                    // 在StartUp模式下，等待更少的检查次数
+                    if (_sceneCheckCount < MAX_SCENE_CHECKS)
+                    {
+                        #if DEBUG
+                        Logger.LogDebug("场景验证", 
+                            $"StartUp模式等待中 - 检查次数: {_sceneCheckCount}, " +
+                            $"目标次数: {MAX_SCENE_CHECKS}, " +
+                            $"场景名称: {sceneName}, " +
+                            $"战斗类型: {mission.CombatType}, " +
+                            $"有防守方: {mission.DefenderTeam != null}, " +
+                            $"有进攻方: {mission.AttackerTeam != null}");
+                        #endif
+                        return false;
+                    }
+
+                    // 在StartUp模式下，检查场景名称、战斗类型和队伍状态
+                    bool hasTeams = mission.DefenderTeam != null && mission.AttackerTeam != null;
+                    bool isValidStartup = isValidBattleType && hasTeams;
+
+                    #if DEBUG
+                    if (!isValidStartup)
+                    {
+                        Logger.LogDebug("场景验证", 
+                            $"StartUp模式验证失败 - " +
+                            $"有效战斗场景: {isValidBattleType}, " +
+                            $"战斗类型: {mission.CombatType}, " +
+                            $"有队伍: {hasTeams}, " +
+                            $"防守方: {mission.DefenderTeam != null}, " +
+                            $"进攻方: {mission.AttackerTeam != null}");
+                    }
+                    else
+                    {
+                        Logger.LogDebug("场景验证", 
+                            $"StartUp模式验证成功 - " +
+                            $"场景名称: {sceneName}, " +
+                            $"战斗类型: {mission.CombatType}, " +
+                            $"检查次数: {_sceneCheckCount}");
+                    }
+                    #endif
+
+                    // 缓存结果
+                    _cachedIsSiegeScene = isValidStartup;
+                    return isValidStartup;
                 }
-                #endif
+
+                // 允许Battle和Deployment模式
+                bool isValidMode = mission.Mode == MissionMode.Battle || 
+                                  mission.Mode == MissionMode.Deployment;
 
                 // 检查双方队伍
                 bool hasValidTeams = mission.DefenderTeam != null &&
@@ -196,6 +276,14 @@ namespace IronBloodSiege.Util
                         $"场景名称: {sceneName}, " +
                         $"战斗类型: {mission.CombatType}");
                 }
+                else
+                {
+                    Logger.LogDebug("场景验证", 
+                        $"场景验证成功 - " +
+                        $"场景名称: {sceneName}, " +
+                        $"模式: {mission.Mode}, " +
+                        $"战斗类型: {mission.CombatType}");
+                }
                 #endif
 
                 // 缓存结果
@@ -211,9 +299,7 @@ namespace IronBloodSiege.Util
                 #if DEBUG
                 Logger.LogError("场景验证", ex);
                 #endif
-                _cachedIsSiegeScene = null;
-                _sceneCheckCount = 0;
-                _lastCheckedSceneName = null;
+                ResetSceneCheck();
                 return false;
             }
         }
@@ -253,7 +339,6 @@ namespace IronBloodSiege.Util
 
         /// <summary>
         /// 安全获取士兵数量，缓存减少重复计算
-        /// 获取攻城方和守城方的士兵数量
         /// </summary>
         public static int GetAttackerCount(Team team)
         {
@@ -263,10 +348,26 @@ namespace IronBloodSiege.Util
 
                 float currentTime = Mission.Current.CurrentTime;
                 
+                // 检查时间是否有效
+                if (currentTime < 0f)
+                {
+                    #if DEBUG
+                    Logger.LogDebug("GetAttackerCount", $"无效的时间值: {currentTime:F2}");
+                    #endif
+                    return 0;
+                }
+
                 // 战斗开始的前60秒，禁用缓存并等待所有部队生成完成
                 bool isInitialPhase = currentTime < 60f;
                 if (isInitialPhase)
                 {
+                    // 如果是新战斗，重置缓存
+                    if (_isNewBattle)
+                    {
+                        ResetCountCache();
+                        _isNewBattle = false;
+                    }
+
                     var initialAgents = team.ActiveAgents;
                     if (initialAgents == null) return 0;
 
@@ -287,25 +388,50 @@ namespace IronBloodSiege.Util
                             $"战斗初期数量异常，返回安全值 - Team: {team.Side}, " +
                             $"原始Count: {initialCount}");
                         #endif
-                        return 999; // 返回安全的大数值
+                        return 999;
+                    }
+
+                    // 在初期阶段即将结束时，更新缓存
+                    if (currentTime >= 59f)
+                    {
+                        _teamCountCache.Clear();
+                        _lastCountUpdateTime = currentTime;
+                        _teamCountCache[(int)team.Side] = initialCount;
+                        
+                        #if DEBUG
+                        Logger.LogDebug("GetAttackerCount", 
+                            $"初期阶段结束，更新缓存 - Team: {team.Side}, " +
+                            $"Count: {initialCount}, " +
+                            $"Time: {currentTime:F2}");
+                        #endif
                     }
 
                     return initialCount;
                 }
 
-                // 使用Team.Side作为缓存键，避免使用Team对象本身
+                // 使用Team.Side作为缓存键
                 int teamKey = (int)team.Side;
                 
-                if (currentTime - _lastCountUpdateTime >= COUNT_CACHE_DURATION)
+                // 检查缓存是否有效
+                bool isCacheValid = _lastCountUpdateTime > 0f && 
+                                  currentTime >= _lastCountUpdateTime && 
+                                  (currentTime - _lastCountUpdateTime) <= COUNT_CACHE_DURATION;
+
+                // 如果缓存无效，重置缓存
+                if (!isCacheValid)
                 {
                     #if DEBUG
-                    Logger.LogDebug("GetAttackerCount", $"缓存过期（{COUNT_CACHE_DURATION}秒），清空缓存");
+                    Logger.LogDebug("GetAttackerCount", 
+                        $"缓存无效，重置 - " +
+                        $"当前时间: {currentTime:F2}, " +
+                        $"上次更新: {_lastCountUpdateTime:F2}, " +
+                        $"间隔: {currentTime - _lastCountUpdateTime:F2}");
                     #endif
-                    _teamCountCache.Clear();
-                    _lastCountUpdateTime = currentTime;
+                    
+                    ResetCountCache();
                 }
-
-                if (_teamCountCache.TryGetValue(teamKey, out int cachedCount))
+                // 如果缓存有效且存在缓存值，使用缓存
+                else if (_teamCountCache.TryGetValue(teamKey, out int cachedCount))
                 {
                     #if DEBUG
                     Logger.LogDebug("GetAttackerCount", 
@@ -316,18 +442,21 @@ namespace IronBloodSiege.Util
                     return cachedCount;
                 }
 
+                // 计算新值
                 var activeAgents = team.ActiveAgents;
                 if (activeAgents == null) return 0;
 
                 int validCount = activeAgents.Count(agent => IsValidAgent(agent));
                 
+                // 更新缓存
                 _teamCountCache[teamKey] = validCount;
+                _lastCountUpdateTime = currentTime;
 
                 #if DEBUG
                 Logger.LogDebug("GetAttackerCount", 
                     $"计算新值 - Team: {team.Side}, " +
                     $"Count: {validCount}, " +
-                    $"更新缓存时间: {currentTime:F2}");
+                    $"更新时间: {currentTime:F2}");
                 #endif
 
                 return validCount;

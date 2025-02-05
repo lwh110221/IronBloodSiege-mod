@@ -92,16 +92,19 @@ namespace IronBloodSiege
 
                     if (Settings.Instance.IsEnabled)
                     {
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
-                            Constants.InfoColor));
-                            
-                        #if DEBUG
-                        Util.Logger.LogDebug("初始化", 
-                            $"Mod已启用 - " +
-                            $"激进援军: {Settings.Instance.EnableAggressiveReinforcement}, " +
-                            $"玩家攻方启用: {Settings.Instance.EnableWhenPlayerAttacker}");
-                        #endif
+                        if (SafetyChecks.IsSiegeSceneValid())
+                        {
+                            InformationManager.DisplayMessage(new InformationMessage(
+                                new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
+                                Constants.InfoColor));
+                                
+                            #if DEBUG
+                            Util.Logger.LogDebug("初始化", 
+                                $"Mod已启用 - " +
+                                $"激进援军: {Settings.Instance.EnableAggressiveReinforcement}, " +
+                                $"玩家攻方启用: {Settings.Instance.EnableWhenPlayerAttacker}");
+                            #endif
+                        }
                     }
                     else 
                     {

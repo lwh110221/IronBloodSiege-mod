@@ -80,6 +80,16 @@ namespace IronBloodSiege.Behavior
                 // 检查场景
                 _isSiegeScene = CheckIfSiegeScene();
 
+                // 如果不是攻城战场景，直接禁用所有功能
+                if (!_isSiegeScene)
+                {
+                    #if DEBUG
+                    Util.Logger.LogDebug("初始化", "非攻城战场景，禁用所有功能");
+                    #endif
+                    DisableMod("非攻城战场景");
+                    return;
+                }
+
                 // 获取其他行为组件的引用,添加重试机制
                 int retryCount = 0;
                 const int MAX_RETRY = 3;
@@ -172,34 +182,6 @@ namespace IronBloodSiege.Behavior
                 if (_pendingDisable)
                 {
                     ProcessDisableTimer(dt);
-                    return;
-                }
-
-                if (_currentMission.CurrentTime % 10f < dt)
-                {
-                    bool previousSceneState = _isSiegeScene;
-                    _isSiegeScene = SafetyChecks.IsSiegeSceneValid();
-                    
-                    #if DEBUG
-                    if (previousSceneState != _isSiegeScene)
-                    {
-                        Util.Logger.LogDebug("任务检查", 
-                            $"场景状态改变 - 之前: {previousSceneState}, 现在: {_isSiegeScene}, " +
-                            $"是否启用: {Settings.Instance.IsEnabled}, " +
-                            $"启用固定撤退: {Settings.Instance.EnableFixedRetreat}, " +
-                            $"撤退阈值: {Settings.Instance.RetreatThreshold}");
-                    }
-                    #endif
-                    
-                    if (previousSceneState && !_isSiegeScene)
-                    {
-                        DisableMod("攻城场景结束");
-                        return;
-                    }
-                }
-                
-                if (!_isSiegeScene)
-                {
                     return;
                 }
 

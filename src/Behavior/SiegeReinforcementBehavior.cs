@@ -59,6 +59,16 @@ namespace IronBloodSiege.Behavior
                 _isSiegeScene = CheckIfSiegeScene();
                 _isSpawnerEnabled = true;
 
+                // 如果不是攻城战场景，直接禁用
+                if (!_isSiegeScene)
+                {
+                    #if DEBUG
+                    Util.Logger.LogDebug("初始化", "非攻城战场景，禁用援军生成器");
+                    #endif
+                    OnModDisabled();
+                    return;
+                }
+
                 #if DEBUG
                 Util.Logger.LogDebug("初始化", 
                     $"援军生成器初始化 - 场景: {_isSiegeScene}, " +
@@ -250,27 +260,11 @@ namespace IronBloodSiege.Behavior
                     return;
                 }
 
-                // 检查场景和Team
-                if (!_isSiegeScene)
+                // 检查是否已禁用
+                if (_isDisabled || BehaviorCleanupHelper.IsCleaningUp)
                 {
                     #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "非攻城场景，跳过援军生成");
-                    #endif
-                    return;
-                }
-
-                if (_attackerTeam == null || _attackerTeam.IsDefender)
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "攻击方Team无效，跳过援军生成");
-                    #endif
-                    return;
-                }
-
-                if (_isDisabled)
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "生成器已禁用，跳过援军生成");
+                    Util.Logger.LogDebug("援军生成", "生成器已禁用或正在清理，跳过援军生成");
                     #endif
                     return;
                 }
@@ -280,6 +274,16 @@ namespace IronBloodSiege.Behavior
                 {
                     #if DEBUG
                     Util.Logger.LogDebug("援军生成", "玩家是攻城方且设置禁用，跳过援军生成");
+                    #endif
+                    return;
+                }
+
+                // 安全获取Mission引用
+                _currentMission = BehaviorCleanupHelper.GetSafeMission(_currentMission);
+                if (_currentMission == null)
+                {
+                    #if DEBUG
+                    Util.Logger.LogDebug("援军生成", "无法获取有效的Mission引用");
                     #endif
                     return;
                 }
@@ -305,7 +309,7 @@ namespace IronBloodSiege.Behavior
                 }
 
                 // 获取生成逻辑组件
-                var spawnLogic = Mission.Current?.GetMissionBehavior<MissionAgentSpawnLogic>();
+                var spawnLogic = _currentMission.GetMissionBehavior<MissionAgentSpawnLogic>();
                 if (spawnLogic == null)
                 {
                     #if DEBUG
@@ -375,6 +379,9 @@ namespace IronBloodSiege.Behavior
             catch (Exception ex)
             {
                 HandleError("援军生成处理", ex);
+                // 发生错误时禁用生成器
+                _isDisabled = true;
+                _isSpawnerEnabled = false;
             }
         }
         #endregion
@@ -453,14 +460,21 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
+                if (_isDisabled) return;
+                
                 _isDisabled = true;
                 _isSpawnerEnabled = false;
                 
-                // 停止生成器
-                var spawnLogic = Mission.Current?.GetMissionBehavior<MissionAgentSpawnLogic>();
-                if (spawnLogic != null)
+                // 安全获取Mission引用
+                var mission = BehaviorCleanupHelper.GetSafeMission(_currentMission);
+                if (mission != null)
                 {
-                    spawnLogic.StopSpawner(BattleSideEnum.Attacker);
+                    // 停止生成器
+                    var spawnLogic = mission.GetMissionBehavior<MissionAgentSpawnLogic>();
+                    if (spawnLogic != null)
+                    {
+                        spawnLogic.StopSpawner(BattleSideEnum.Attacker);
+                    }
                 }
                 
                 #if DEBUG

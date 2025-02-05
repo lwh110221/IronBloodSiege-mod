@@ -41,6 +41,16 @@ namespace IronBloodSiege.Behavior
                 _currentMission = Mission.Current;
                 _attackerTeam = _currentMission?.AttackerTeam;
                 _isSiegeScene = CheckIfSiegeScene();
+
+                // 如果不是攻城战场景，直接禁用
+                if (!_isSiegeScene)
+                {
+                    #if DEBUG
+                    Util.Logger.LogDebug("初始化", "非攻城战场景，禁用士气管理器");
+                    #endif
+                    OnModDisabled();
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -143,6 +153,18 @@ namespace IronBloodSiege.Behavior
                 Util.Logger.LogDebug("任务结束", "开始任务结束清理");
                 #endif
 
+                // 恢复所有Agent的士气
+                if (_attackerTeam != null)
+                {
+                    foreach (var agent in _attackerTeam.ActiveAgents)
+                    {
+                        if (agent != null && agent.IsActive())
+                        {
+                            BehaviorCleanupHelper.RestoreAgent(agent);
+                        }
+                    }
+                }
+
                 // 重置所有状态
                 _isDisabled = true;
                 _isSiegeScene = false;
@@ -150,6 +172,7 @@ namespace IronBloodSiege.Behavior
                 _lastMessageTime = 0f;
                 _currentMission = null;
                 _attackerTeam = null;
+                _wasEnabledBefore = false;
 
                 base.OnEndMission();
             }
@@ -168,6 +191,18 @@ namespace IronBloodSiege.Behavior
                 Util.Logger.LogDebug("移除行为", "开始移除行为");
                 #endif
 
+                // 恢复所有Agent的士气
+                if (_attackerTeam != null)
+                {
+                    foreach (var agent in _attackerTeam.ActiveAgents)
+                    {
+                        if (agent != null && agent.IsActive())
+                        {
+                            BehaviorCleanupHelper.RestoreAgent(agent);
+                        }
+                    }
+                }
+
                 // 确保所有状态被重置
                 OnModDisabled();
                 _currentMission = null;
@@ -175,6 +210,7 @@ namespace IronBloodSiege.Behavior
                 _isSiegeScene = false;
                 _lastMoraleUpdateTime = 0f;
                 _lastMessageTime = 0f;
+                _wasEnabledBefore = false;
 
                 base.OnRemoveBehavior();
             }
@@ -357,32 +393,21 @@ namespace IronBloodSiege.Behavior
 
         public void OnModDisabled()
         {
-            try
+            if (!_isDisabled)
             {
                 _isDisabled = true;
                 
-                // 重置所有单位的士气为默认值
+                // 恢复所有Agent的士气
                 if (_attackerTeam != null)
                 {
                     foreach (var agent in _attackerTeam.ActiveAgents)
                     {
-                        if (SafetyChecks.IsValidAgent(agent) && 
-                            !agent.IsPlayerControlled && 
-                            agent.Formation?.PlayerOwner == null &&
-                            agent.Formation?.Captain?.IsPlayerControlled != true)
+                        if (agent != null && agent.IsActive())
                         {
-                            agent.SetMorale(60f);
+                            BehaviorCleanupHelper.RestoreAgent(agent);
                         }
                     }
                 }
-                
-                #if DEBUG
-                Util.Logger.LogDebug("禁用Mod", "所有单位士气已重置");
-                #endif
-            }
-            catch (Exception ex)
-            {
-                HandleError("mod disabled", ex);
             }
         }
 

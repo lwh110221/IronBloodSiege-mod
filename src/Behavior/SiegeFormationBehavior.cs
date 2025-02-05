@@ -45,6 +45,16 @@ namespace IronBloodSiege.Behavior
                 _attackerTeam = _currentMission?.AttackerTeam;
                 _advancedFormations = new HashSet<Formation>();
                 _isSiegeScene = CheckIfSiegeScene();
+
+                // 如果不是攻城战场景，直接禁用
+                if (!_isSiegeScene)
+                {
+                    #if DEBUG
+                    Util.Logger.LogDebug("初始化", "非攻城战场景，禁用Formation控制器");
+                    #endif
+                    OnModDisabled();
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -68,7 +78,7 @@ namespace IronBloodSiege.Behavior
                     agent.IsPlayerControlled)
                     return;
                     
-                agent.SetMorale(95f);
+                agent.SetMorale(100f);
                 
                 // 禁用撤退标志
                 agent.SetAgentFlags(agent.GetAgentFlags() & ~AgentFlag.CanRetreat);
@@ -101,13 +111,29 @@ namespace IronBloodSiege.Behavior
                     {
                         if (_advancedFormations != null)
                         {
-                            foreach (var formation in _advancedFormations)
+                            // 创建一个副本来遍历，避免集合修改异常
+                            var formationsToRestore = _advancedFormations.ToList();
+                            foreach (var formation in formationsToRestore)
                             {
-                                RestoreFormation(formation);
+                                if (formation != null)
+                                {
+                                    BehaviorCleanupHelper.RestoreFormation(formation);
+                                }
                             }
                             _advancedFormations.Clear();
                         }
+
+                        // 重置所有状态
+                        _currentMission = null;
+                        _attackerTeam = null;
+                        _isSiegeScene = false;
+                        _wasEnabledBefore = false;
+                        _isDisabled = true;
                         _isCleanedUp = true;
+
+                        #if DEBUG
+                        Util.Logger.LogDebug("任务结束", "Formation行为完成清理");
+                        #endif
                     }
                 }
                 base.OnEndMission();
@@ -116,6 +142,32 @@ namespace IronBloodSiege.Behavior
             {
                 HandleError("任务结束", ex);
                 base.OnEndMission();
+            }
+        }
+
+        public override void OnRemoveBehavior()
+        {
+            try
+            {
+                if (!_isCleanedUp)
+                {
+                    RestoreAllFormations();
+                    
+                    // 重置所有状态
+                    _currentMission = null;
+                    _attackerTeam = null;
+                    _isSiegeScene = false;
+                    _wasEnabledBefore = false;
+                    _isDisabled = true;
+                    _isCleanedUp = true;
+                }
+                
+                base.OnRemoveBehavior();
+            }
+            catch (Exception ex)
+            {
+                HandleError("移除行为", ex);
+                base.OnRemoveBehavior();
             }
         }
 
@@ -233,7 +285,7 @@ namespace IronBloodSiege.Behavior
                             agent.StopRetreating();
                         }
                         
-                        agent.SetMorale(95f);
+                        agent.SetMorale(100f);
                         
                         // 禁用撤退标志
                         agent.SetAgentFlags(agent.GetAgentFlags() & ~AgentFlag.CanRetreat);
@@ -290,7 +342,7 @@ namespace IronBloodSiege.Behavior
                     agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.Default);
                                      
                     // 重置士气（设为中等值）
-                    agent.SetMorale(50f);
+                    agent.SetMorale(70f);
                     
                     // 更新缓存值
                     agent.UpdateCachedAndFormationValues(true, false);
@@ -324,12 +376,13 @@ namespace IronBloodSiege.Behavior
             
             try
             {
+                // 创建一个副本来遍历，避免集合修改异常
                 var formationsToRestore = _advancedFormations.ToList();
                 foreach (var formation in formationsToRestore)
                 {
                     if (formation != null)
                     {
-                        RestoreFormation(formation);
+                        BehaviorCleanupHelper.RestoreFormation(formation);
                     }
                 }
                 _advancedFormations.Clear();
@@ -380,13 +433,18 @@ namespace IronBloodSiege.Behavior
 
         public void OnModDisabled()
         {
-            _isDisabled = true;
-            RestoreAllFormations();
+            if (!_isDisabled)
+            {
+                _isDisabled = true;
+                RestoreAllFormations();
+            }
         }
 
         public void OnSceneChanged()
         {
             RestoreAllFormations();
+            _isSiegeScene = false;
+            _isDisabled = true;
         }
     }
 } 

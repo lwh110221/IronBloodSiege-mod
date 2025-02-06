@@ -8,7 +8,6 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using System;
 using IronBloodSiege.Behavior;
-using IronBloodSiege.Setting;
 using IronBloodSiege.Util;
 
 namespace IronBloodSiege
@@ -68,6 +67,8 @@ namespace IronBloodSiege
             }
         }
 
+        private bool _hasShownMessage = false;
+
         public override void OnBeforeMissionBehaviorInitialize(Mission mission)
         {
             base.OnBeforeMissionBehaviorInitialize(mission);
@@ -79,39 +80,14 @@ namespace IronBloodSiege
                     Util.Logger.LogDebug("OnBeforeMissionBehaviorInitialize", 
                         $"Mission Mode: {mission.Mode}, " +
                         $"Scene Name: {mission.SceneName}, " +
-                        $"Combat Type: {mission.CombatType}, " +
-                        $"Has Defender: {mission.DefenderTeam != null}, " +
-                        $"Has Attacker: {mission.AttackerTeam != null}");
+                        $"Combat Type: {mission.CombatType}");
                     #endif
 
-                    // 按照依赖关系顺序添加行为
+                    // 添加行为
                     mission.AddMissionBehavior(new SiegeReinforcementBehavior());  // 援军生成必须最先添加
                     mission.AddMissionBehavior(new SiegeMoraleBehavior());         // 主协调者
                     mission.AddMissionBehavior(new SiegeFormationBehavior());      // Formation控制
                     mission.AddMissionBehavior(new SiegeMoraleManagerBehavior());  // 士气管理
-
-                    if (Settings.Instance.IsEnabled)
-                    {
-                        if (SafetyChecks.IsSiegeSceneValid())
-                        {
-                            InformationManager.DisplayMessage(new InformationMessage(
-                                new TextObject("{=ibs_mod_enabled}IronBlood Siege is enabled").ToString(), 
-                                Constants.InfoColor));
-                                
-                            #if DEBUG
-                            Util.Logger.LogDebug("初始化", 
-                                $"Mod已启用 - " +
-                                $"激进援军: {Settings.Instance.EnableAggressiveReinforcement}, " +
-                                $"玩家攻方启用: {Settings.Instance.EnableWhenPlayerAttacker}");
-                            #endif
-                        }
-                    }
-                    else 
-                    {
-                        InformationManager.DisplayMessage(new InformationMessage(
-                            new TextObject("{=ibs_mod_disabled}IronBlood Siege is disabled").ToString(), 
-                            Constants.ErrorColor));
-                    }
                 }
             }
             catch (Exception ex)

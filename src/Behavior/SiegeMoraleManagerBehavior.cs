@@ -254,21 +254,27 @@ namespace IronBloodSiege.Behavior
 
                 _lastMoraleUpdateTime = currentTime;
                 
-                // 调整士气并获取提升数量
-                int boostedCount = UpdateAgentsMorale(team, Settings.Instance.MoraleThreshold, Settings.Instance.MoraleBoostRate);
-                
-                // 显示士气提升消息
-                if (boostedCount >= 10 && currentTime - _lastMessageTime >= Constants.MESSAGE_COOLDOWN)
+                try
                 {
-                    _lastMessageTime = currentTime;
-                    Constants.MoraleBoostMessage.SetTextVariable("COUNT", boostedCount);
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        Constants.MoraleBoostMessage.ToString(),
-                        Constants.WarningColor));
+                    // 调整士气并获取提升数量
+                    int boostedCount = UpdateAgentsMorale(team, Settings.Instance.MoraleThreshold, Settings.Instance.MoraleBoostRate);
                     
-                    #if DEBUG
-                    Util.Logger.LogDebug("调整士气", $"已显示士气提升消息，提升数量: {boostedCount}");
-                    #endif
+                    if (boostedCount >= 10 && currentTime - _lastMessageTime >= Constants.MESSAGE_COOLDOWN)
+                    {
+                        _lastMessageTime = currentTime;
+                        Constants.MoraleBoostMessage.SetTextVariable("COUNT", boostedCount);
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            Constants.MoraleBoostMessage.ToString(),
+                            Constants.WarningColor));
+                        
+                        #if DEBUG
+                        Util.Logger.LogDebug("调整士气", $"已显示士气提升消息，提升数量: {boostedCount}");
+                        #endif
+                    }
+                }
+                catch (Exception)
+                {
+                    _lastMoraleUpdateTime = currentTime - Constants.MORALE_UPDATE_INTERVAL;
                 }
             }
             catch (Exception ex)
@@ -319,17 +325,25 @@ namespace IronBloodSiege.Behavior
                             // 直接使用设置的提升值
                             float targetMorale = oldMorale + moraleBoostRate;
                             targetMorale = Math.Min(targetMorale, 100f);
-                            agent.SetMorale(targetMorale);
-
-                            if (targetMorale > oldMorale)
+                            
+                            try
                             {
-                                boostedCount++;
+                                agent.SetMorale(targetMorale);
+
+                                if (targetMorale > oldMorale)
+                                {
+                                    boostedCount++;
+                                }
+
+                                // 停止撤退状态
+                                if (agent.IsRetreating())
+                                {
+                                    agent.StopRetreating();
+                                }
                             }
-
-                            // 停止撤退状态
-                            if (agent.IsRetreating())
+                            catch (Exception)
                             {
-                                agent.StopRetreating();
+                                continue;
                             }
                             
                             #if DEBUG
@@ -343,9 +357,10 @@ namespace IronBloodSiege.Behavior
                             #endif
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        HandleError("单个AI士气更新", ex);
+                        // 单个Agent处理失败不影响其他Agent
+                        continue;
                     }
                 }
             }

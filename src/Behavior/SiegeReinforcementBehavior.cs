@@ -318,62 +318,76 @@ namespace IronBloodSiege.Behavior
                     return;
                 }
 
-                // 获取当前战场信息
-                int currentAttackerCount = spawnLogic.NumberOfActiveAttackerTroops;
-                int remainingAttackers = spawnLogic.NumberOfRemainingAttackerTroops;
-                int battleSize = spawnLogic.BattleSize;
-
-                #if DEBUG
-                Util.Logger.LogDebug("援军生成", 
-                    $"检查生成条件 - 当前数量: {currentAttackerCount}, " +
-                    $"剩余可生成: {remainingAttackers}, " +
-                    $"战场大小: {battleSize}");
-                #endif
-                
-                // 如果没有剩余可生成的士兵或已达到最大数量限制,直接返回
-                if (remainingAttackers <= 0 || currentAttackerCount >= MAX_TOTAL_ATTACKERS) 
+                try
                 {
+                    // 获取当前战场信息
+                    int currentAttackerCount = spawnLogic.NumberOfActiveAttackerTroops;
+                    int remainingAttackers = spawnLogic.NumberOfRemainingAttackerTroops;
+                    int battleSize = spawnLogic.BattleSize;
+
                     #if DEBUG
                     Util.Logger.LogDebug("援军生成", 
-                        $"无法生成援军 - 剩余可生成: {remainingAttackers}, " +
-                        $"当前数量: {currentAttackerCount}, " +
-                        $"最大限制: {MAX_TOTAL_ATTACKERS}");
-                    #endif
-                    return;
-                }
-
-                // 计算当前战场还能容纳多少士兵
-                int maxAttackers = battleSize / 2; // 假设双方各占一半
-                int availableSpace = maxAttackers - currentAttackerCount;
-
-                // 如果没有可用空间,直接返回
-                if (availableSpace <= 0)
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", 
-                        $"战场空间不足 - 当前数量: {currentAttackerCount}, " +
-                        $"最大容量: {maxAttackers}");
-                    #endif
-                    return;
-                }
-
-                // 计算这次应该生成多少援军
-                int spawnCount = Math.Min(Math.Min(availableSpace, SPAWN_BATCH_SIZE), remainingAttackers);
-
-                if (spawnCount > 0)
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", 
-                        $"正在生成援军 - 当前数量: {currentAttackerCount}, " +
-                        $"本次生成: {spawnCount}, " +
+                        $"检查生成条件 - 当前数量: {currentAttackerCount}, " +
                         $"剩余可生成: {remainingAttackers}, " +
-                        $"战场容量: {battleSize}, " +
-                        $"可用空间: {availableSpace}");
+                        $"战场大小: {battleSize}");
                     #endif
+                    
+                    // 如果没有剩余可生成的士兵或已达到最大数量限制,直接返回
+                    if (remainingAttackers <= 0 || currentAttackerCount >= MAX_TOTAL_ATTACKERS) 
+                    {
+                        #if DEBUG
+                        Util.Logger.LogDebug("援军生成", 
+                            $"无法生成援军 - 剩余可生成: {remainingAttackers}, " +
+                            $"当前数量: {currentAttackerCount}, " +
+                            $"最大限制: {MAX_TOTAL_ATTACKERS}");
+                        #endif
+                        return;
+                    }
 
-                    // 启动生成器
-                    spawnLogic.StartSpawner(BattleSideEnum.Attacker);
-                    _nextSpawnTime = currentTime + SPAWN_INTERVAL;
+                    // 计算当前战场还能容纳多少士兵
+                    int maxAttackers = battleSize / 2; // 假设双方各占一半
+                    int availableSpace = maxAttackers - currentAttackerCount;
+
+                    // 如果没有可用空间,直接返回
+                    if (availableSpace <= 0)
+                    {
+                        #if DEBUG
+                        Util.Logger.LogDebug("援军生成", 
+                            $"战场空间不足 - 当前数量: {currentAttackerCount}, " +
+                            $"最大容量: {maxAttackers}");
+                        #endif
+                        return;
+                    }
+
+                    // 计算这次应该生成多少援军
+                    int spawnCount = Math.Min(Math.Min(availableSpace, SPAWN_BATCH_SIZE), remainingAttackers);
+
+                    if (spawnCount > 0)
+                    {
+                        #if DEBUG
+                        Util.Logger.LogDebug("援军生成", 
+                            $"正在生成援军 - 当前数量: {currentAttackerCount}, " +
+                            $"本次生成: {spawnCount}, " +
+                            $"剩余可生成: {remainingAttackers}, " +
+                            $"战场容量: {battleSize}, " +
+                            $"可用空间: {availableSpace}");
+                        #endif
+
+                        try
+                        {
+                            // 启动生成器
+                            spawnLogic.StartSpawner(BattleSideEnum.Attacker);
+                            _nextSpawnTime = currentTime + SPAWN_INTERVAL;
+                        }
+                        catch (Exception)
+                        {
+                            _nextSpawnTime = currentTime + SPAWN_INTERVAL * 2;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    _lastCheckTime = currentTime + SPAWN_CHECK_INTERVAL * 2;
                 }
             }
             catch (Exception ex)

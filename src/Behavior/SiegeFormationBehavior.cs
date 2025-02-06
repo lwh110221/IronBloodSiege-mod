@@ -261,12 +261,12 @@ namespace IronBloodSiege.Behavior
                     
                         
                         // 增加进攻性AI行为权重
-                        formation.AI.SetBehaviorWeight<BehaviorCharge>(0.8f);
-                        formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.8f);
+                        // formation.AI.SetBehaviorWeight<BehaviorCharge>(0.8f);
+                        // formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.8f);
                         
                         // 禁用可能导致停止的行为
-                        formation.AI.SetBehaviorWeight<BehaviorStop>(0f);
-                        formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
+                        // formation.AI.SetBehaviorWeight<BehaviorStop>(0f);
+                        // formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
                         
                         // 确保Formation的AI会在下一个tick重新评估行为
                         formation.IsAITickedAfterSplit = false;
@@ -292,7 +292,7 @@ namespace IronBloodSiege.Behavior
                                     agent.StopRetreating();
                                 }
                                 
-                                agent.SetMorale(100f);
+                                agent.SetMorale(95f);
                                 
                                 // 禁用撤退标志
                                 agent.SetAgentFlags(agent.GetAgentFlags() & ~AgentFlag.CanRetreat);
@@ -367,7 +367,7 @@ namespace IronBloodSiege.Behavior
                             agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.Default);
                                          
                             // 重置士气（设为中等值）
-                            agent.SetMorale(70f);
+                            agent.SetMorale(45f);
                             
                             // 更新缓存值
                             agent.UpdateCachedAndFormationValues(true, false);
@@ -379,11 +379,11 @@ namespace IronBloodSiege.Behavior
                     });
                     
                     // 如果Formation处于停止状态，设置为前进命令
-                    var currentOrder = formation.GetReadonlyMovementOrderReference();
-                    if (currentOrder.OrderEnum == MovementOrder.MovementOrderEnum.Stop)
-                    {
-                        formation.SetMovementOrder(MovementOrder.MovementOrderAdvance);
-                    }
+                    // var currentOrder = formation.GetReadonlyMovementOrderReference();
+                    // if (currentOrder.OrderEnum == MovementOrder.MovementOrderEnum.Stop)
+                    // {
+                    //     formation.SetMovementOrder(MovementOrder.MovementOrderAdvance);
+                    // }
                 }
                 catch (Exception)
                 {

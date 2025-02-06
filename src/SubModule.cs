@@ -83,9 +83,9 @@ namespace IronBloodSiege
                         $"Combat Type: {mission.CombatType}");
                     #endif
 
-                    // 添加行为
+                    // 按照依赖关系顺序添加行为
                     mission.AddMissionBehavior(new SiegeReinforcementBehavior());  // 援军生成必须最先添加
-                    mission.AddMissionBehavior(new SiegeMoraleBehavior());         // 主协调者
+                    mission.AddMissionBehavior(new MainBehavior());                // 主协调者
                     mission.AddMissionBehavior(new SiegeFormationBehavior());      // Formation控制
                     mission.AddMissionBehavior(new SiegeMoraleManagerBehavior());  // 士气管理
                 }

@@ -12,7 +12,7 @@ namespace IronBloodSiege.Behavior
     /// <summary>
     /// Main 管理其他行为类之间的通信和状态同步
     /// </summary>
-    public class SiegeMoraleBehavior : MissionBehavior
+    public class MainBehavior : MissionBehavior
     {
         #region Fields
         // 缓存Mission.Current以减少访问次数

@@ -13,7 +13,7 @@ namespace IronBloodSiege.Util
     {
         private static bool? _cachedIsSiegeScene = null;
         private static int _sceneCheckCount = 0;
-        private static readonly int MAX_SCENE_CHECKS = 3;
+        private static readonly int MAX_SCENE_CHECKS = 2;
         private static string _lastCheckedSceneName = null;
         private static float _lastSceneCheckTime = 0f;
         private static readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();

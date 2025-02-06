@@ -90,7 +90,7 @@
   
   <ItemGroup>
     <Compile Include="src\SubModule.cs" />
-    <Compile Include="src\Behavior\SiegeMoraleBehavior.cs" />
+    <Compile Include="src\Behavior\MainBehavior.cs" />
     <Compile Include="src\Util\BehaviorCleanupHelper.cs" />
     <Compile Include="src\Setting\Settings.cs" />
     <Compile Include="src\Util\SafetyChecks.cs" />

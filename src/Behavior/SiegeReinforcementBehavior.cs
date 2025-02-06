@@ -5,6 +5,7 @@ using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using IronBloodSiege.Util;
 using IronBloodSiege.Setting;
+using System.Collections.Generic;
 
 namespace IronBloodSiege.Behavior
 {
@@ -12,11 +13,12 @@ namespace IronBloodSiege.Behavior
     {
         #region Fields
         private bool _isDisabled = false;        // 是否禁用
+        private bool _isCleanedUp = false;       // 清理标记
         
         // 缓存Mission.Current以减少访问次数
         private Mission _currentMission;
         
-        // 缓存攻防双方的Team引用
+        // 缓存攻城方Team引用
         private Team _attackerTeam;
         
         private bool _isSiegeScene = false;      // 是否是攻城场景
@@ -25,12 +27,19 @@ namespace IronBloodSiege.Behavior
         private bool _isSpawnerEnabled = true;   // 标记是否启用援军修改
         private float _battleStartTime = 0f;     // 战斗开始时间
         private bool _wasEnabledBefore = false;  // 添加字段跟踪之前的启用状态
+        private readonly object _cleanupLock = new object();  // 线程锁
 
         // 援军生成相关
         private const float SPAWN_INTERVAL = 5f;               // 援军生成的时间间隔
-        private const float SPAWN_CHECK_INTERVAL = 0.5f;       // 检查是否生成援军的时间间隔
-        private const int SPAWN_BATCH_SIZE = 50;               // 每次生成援军的数量
+        private const float SPAWN_CHECK_INTERVAL = 1f;       // 检查是否生成援军的时间间隔
+        // private const int SPAWN_BATCH_SIZE = 50;               // 每次生成援军的数量
         private const int MAX_TOTAL_ATTACKERS = 999999999;     // 攻击方最大数量限制
+        
+        // 援军统计
+        private int _initialAttackerCount = 0;    // 初始攻击方数量
+        private int _reinforcementCount = 0;      // 已生成的援军数量
+        private float _lastReinforcementTime = 0f;// 最后一次生成援军的时间
+        private List<Agent> _pendingReinforcements = new List<Agent>(); // 待处理的援军
         #endregion
 
         #region Properties
@@ -341,66 +350,52 @@ namespace IronBloodSiege.Behavior
                     // 获取当前战场信息
                     int currentAttackerCount = spawnLogic.NumberOfActiveAttackerTroops;
                     int remainingAttackers = spawnLogic.NumberOfRemainingAttackerTroops;
+                    int totalAgents = spawnLogic.NumberOfAgents;
                     int battleSize = spawnLogic.BattleSize;
 
                     #if DEBUG
                     Util.Logger.LogDebug("援军生成", 
-                        $"检查生成条件 - 当前数量: {currentAttackerCount}, " +
+                        $"检查生成条件 - 当前攻方数量: {currentAttackerCount}, " +
                         $"剩余可生成: {remainingAttackers}, " +
+                        $"当前战场人数: {totalAgents}, " +
                         $"战场大小: {battleSize}");
                     #endif
                     
-                    // 如果没有剩余可生成的士兵或已达到最大数量限制,直接返回
-                    if (remainingAttackers <= 0 || currentAttackerCount >= MAX_TOTAL_ATTACKERS) 
+                    // 如果没有剩余可生成的士兵，直接返回
+                    if (remainingAttackers <= 0) 
                     {
                         #if DEBUG
-                        Util.Logger.LogDebug("援军生成", 
-                            $"无法生成援军 - 剩余可生成: {remainingAttackers}, " +
-                            $"当前数量: {currentAttackerCount}, " +
-                            $"最大限制: {MAX_TOTAL_ATTACKERS}");
+                        Util.Logger.LogDebug("援军生成", "无可生成的援军");
                         #endif
                         return;
                     }
 
-                    // 计算当前战场还能容纳多少士兵
-                    int maxAttackers = battleSize / 2; // 假设双方各占一半
-                    int availableSpace = maxAttackers - currentAttackerCount;
+                    // 原生系统来控制生成数量和时机
+                    #if DEBUG
+                    Util.Logger.LogDebug("援军生成", 
+                        $"正在生成援军 - 当前攻方数量: {currentAttackerCount}, " +
+                        $"剩余可生成: {remainingAttackers}, " +
+                        $"当前战场人数: {totalAgents}, " +
+                        $"战场大小: {battleSize}");
+                    #endif
 
-                    // 如果没有可用空间,直接返回
-                    if (availableSpace <= 0)
+                    try
                     {
+                        // 使用正确的API来控制生成
+                        spawnLogic.SetSpawnTroops(BattleSideEnum.Attacker, true, true);
+                        _nextSpawnTime = currentTime + SPAWN_INTERVAL;
+                        
                         #if DEBUG
                         Util.Logger.LogDebug("援军生成", 
-                            $"战场空间不足 - 当前数量: {currentAttackerCount}, " +
-                            $"最大容量: {maxAttackers}");
-                        #endif
-                        return;
-                    }
-
-                    // 计算这次应该生成多少援军
-                    int spawnCount = Math.Min(Math.Min(availableSpace, SPAWN_BATCH_SIZE), remainingAttackers);
-
-                    if (spawnCount > 0)
-                    {
-                        #if DEBUG
-                        Util.Logger.LogDebug("援军生成", 
-                            $"正在生成援军 - 当前数量: {currentAttackerCount}, " +
-                            $"本次生成: {spawnCount}, " +
+                            $"启动生成器 - 当前攻方数量: {currentAttackerCount}, " +
                             $"剩余可生成: {remainingAttackers}, " +
-                            $"战场容量: {battleSize}, " +
-                            $"可用空间: {availableSpace}");
+                            $"当前总人数: {totalAgents}, " +
+                            $"战场大小: {battleSize}");
                         #endif
-
-                        try
-                        {
-                            // 启动生成器
-                            spawnLogic.StartSpawner(BattleSideEnum.Attacker);
-                            _nextSpawnTime = currentTime + SPAWN_INTERVAL;
-                        }
-                        catch (Exception)
-                        {
-                            _nextSpawnTime = currentTime + SPAWN_INTERVAL * 2;
-                        }
+                    }
+                    catch (Exception)
+                    {
+                        _nextSpawnTime = currentTime + SPAWN_INTERVAL * 2;
                     }
                 }
                 catch (Exception)
@@ -426,6 +421,11 @@ namespace IronBloodSiege.Behavior
             if (side == BattleSideEnum.Attacker)
             {
                 _isSpawnerEnabled = true;
+                var spawnLogic = Mission.Current?.GetMissionBehavior<MissionAgentSpawnLogic>();
+                if (spawnLogic != null)
+                {
+                    spawnLogic.SetSpawnTroops(side, true, true);
+                }
             }
         }
 
@@ -436,6 +436,11 @@ namespace IronBloodSiege.Behavior
             if (side == BattleSideEnum.Attacker)
             {
                 _isSpawnerEnabled = false;
+                var spawnLogic = Mission.Current?.GetMissionBehavior<MissionAgentSpawnLogic>();
+                if (spawnLogic != null)
+                {
+                    spawnLogic.SetSpawnTroops(side, false);
+                }
             }
         }
 
@@ -443,9 +448,10 @@ namespace IronBloodSiege.Behavior
         {
             if (!Settings.Instance.IsEnabled) return false;
             
-            if (side == BattleSideEnum.Attacker)
+            var spawnLogic = Mission.Current?.GetMissionBehavior<MissionAgentSpawnLogic>();
+            if (spawnLogic != null && side == BattleSideEnum.Attacker)
             {
-                return _isSpawnerEnabled;
+                return spawnLogic.IsSideSpawnEnabled(side);
             }
             return false;
         }

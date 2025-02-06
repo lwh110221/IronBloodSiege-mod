@@ -15,7 +15,7 @@ namespace IronBloodSiege.Setting
         public new static Settings Instance => AttributeGlobalSettings<Settings>.Instance;
 
         [SettingPropertyBool("{=ibs_enable_mod}Enable Mod", RequireRestart = false, 
-            HintText = "{=ibs_enable_mod_hint}Whether to enable IronBlood Siege - Note: Author is just a student, please be kind", Order = 0)]
+            HintText = "{=ibs_enable_mod_hint}Whether to enable IronBlood Siege - Note: Do not enable or disable during battle, adjust before entering the scene", Order = 0)]
         [SettingPropertyGroup("{=ibs_settings_basic}Basic Settings", GroupOrder = 0)]
         public bool IsEnabled { get; set; } = true;
 

@@ -13,7 +13,7 @@
     <!-- 设置 -->
     <string id="ibs_settings_basic" text="Basic Settings"/>
     <string id="ibs_enable_mod" text="Enable Mod"/>
-    <string id="ibs_enable_mod_hint" text="Whether to enable IronBlood Siege - Note: Author is just a student, please be kind"/>
+    <string id="ibs_enable_mod_hint" text="Whether to enable IronBlood Siege - Note: Do not enable or disable during battle, adjust before entering the scene"/>
     <string id="ibs_enable_when_player_attacker" text="Enable When Player is Attacker"/>
     <string id="ibs_enable_when_player_attacker_hint" text="Whether to enable iron will effect when player is on the attacking side"/>
 

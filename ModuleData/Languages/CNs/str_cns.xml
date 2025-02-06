@@ -14,7 +14,7 @@
     <!-- Settings -->
     <string id="ibs_settings_basic" text="基础设置" />
     <string id="ibs_enable_mod" text="启用Mod" />
-    <string id="ibs_enable_mod_hint" text="是否启用铁血攻城 -- tip：作者只是个学生，做的不好的地方请见谅" />
+    <string id="ibs_enable_mod_hint" text="是否启用铁血攻城 -- tip：不要在正在战斗时开启和关闭，在进入场景前调整" />
     <string id="ibs_enable_when_player_attacker" text="玩家为进攻方时启用" />
     <string id="ibs_enable_when_player_attacker_hint" text="当玩家在进攻方时是否启用铁血攻城效果" />
 

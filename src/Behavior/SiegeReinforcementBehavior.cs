@@ -43,6 +43,7 @@ namespace IronBloodSiege.Behavior
             base.OnBehaviorInitialize();
             try
             {
+                // 记录初始启用状态
                 _wasEnabledBefore = Settings.Instance.IsEnabled;
                 if (!_wasEnabledBefore)
                 {
@@ -56,10 +57,27 @@ namespace IronBloodSiege.Behavior
                 _currentMission = Mission.Current;
                 _attackerTeam = _currentMission?.AttackerTeam;
                 _nextSpawnTime = _battleStartTime;
-                _isSiegeScene = CheckIfSiegeScene();
                 _isSpawnerEnabled = true;
 
-                // 如果不是攻城战场景，直接禁用
+                // 等待场景检查完全完成
+                int checkCount = 0;
+                const int MAX_WAIT_CHECKS = 3;
+                bool isValidScene = false;
+
+                while (checkCount < MAX_WAIT_CHECKS)
+                {
+                    isValidScene = SafetyChecks.IsSiegeSceneValid();
+                    if (isValidScene)
+                    {
+                        break;
+                    }
+                    checkCount++;
+                    System.Threading.Thread.Sleep(100); 
+                }
+
+                _isSiegeScene = isValidScene;
+
+                // 如果最终确认不是攻城战场景，才禁用
                 if (!_isSiegeScene)
                 {
                     #if DEBUG

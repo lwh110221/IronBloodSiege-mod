@@ -76,11 +76,26 @@ namespace IronBloodSiege.Behavior
                 _attackerTeam = _currentMission?.AttackerTeam;
                 _defenderTeam = _currentMission?.DefenderTeam;
                 _currentSceneName = _currentMission?.SceneName?.ToLowerInvariant() ?? string.Empty;
-                
-                // 检查场景
-                _isSiegeScene = CheckIfSiegeScene();
 
-                // 如果不是攻城战场景，直接禁用所有功能
+                // 等待场景检查完全完成
+                int checkCount = 0;
+                const int MAX_WAIT_CHECKS = 3;
+                bool isValidScene = false;
+
+                while (checkCount < MAX_WAIT_CHECKS)
+                {
+                    isValidScene = SafetyChecks.IsSiegeSceneValid();
+                    if (isValidScene)
+                    {
+                        break;
+                    }
+                    checkCount++;
+                    System.Threading.Thread.Sleep(100);
+                }
+
+                _isSiegeScene = isValidScene;
+
+                // 如果最终确认不是攻城战场景，才禁用所有功能
                 if (!_isSiegeScene)
                 {
                     #if DEBUG
@@ -107,7 +122,7 @@ namespace IronBloodSiege.Behavior
                     }
 
                     retryCount++;
-                    System.Threading.Thread.Sleep(100); // 等待100ms后重试
+                    System.Threading.Thread.Sleep(100);
                 }
 
                 #if DEBUG

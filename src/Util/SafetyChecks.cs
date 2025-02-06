@@ -19,7 +19,7 @@ namespace IronBloodSiege.Util
         private static readonly Dictionary<int, int> _teamCountCache = new Dictionary<int, int>();
         private static float _lastCountUpdateTime = -1f;  // 初始化为-1
         private const float COUNT_CACHE_DURATION = 1f;    // 缓存时间
-        private const float SCENE_CHECK_TIMEOUT = 5f;     // 场景检查超时时间
+        private const float SCENE_CHECK_TIMEOUT = 10f;     // 场景检查超时时间
         private static bool _isFirstCheck = true;         // 添加首次检查标记
         private static bool _isNewBattle = true;          // 添加新战斗标记
         private static bool _hasShownMessage = false;

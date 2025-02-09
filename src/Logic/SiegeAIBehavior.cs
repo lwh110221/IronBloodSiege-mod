@@ -16,27 +16,34 @@ namespace IronBloodSiege.Logic
             try
             {   
                 formation.AI.ResetBehaviorWeights();
+
+                formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
+                formation.AI.SetBehaviorWeight<BehaviorRetreatToKeep>(0f);
                 
                 formation.SetControlledByAI(true, false);
                 
                 switch (formation.RepresentativeClass)
                 {
                     case FormationClass.Infantry:
-                        formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(2.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(2.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(2.0f);
+                    case FormationClass.HeavyInfantry:
+                    case FormationClass.Cavalry:
+                    case FormationClass.LightCavalry:
+                    case FormationClass.HeavyCavalry:
+                        formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(3.0f);
+                        formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(3.0f);
+                        formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(3.0f);
+                        formation.AI.SetBehaviorWeight<BehaviorDestroySiegeWeapons>(2.5f);
+                        formation.AI.SetBehaviorWeight<BehaviorAdvance>(2.0f);
+                        formation.AI.SetBehaviorWeight<BehaviorRegroup>(1.0f);
+                        formation.AI.SetBehaviorWeight<BehaviorStop>(0.1f);
                         break;
                         
                     case FormationClass.Ranged:
+                    case FormationClass.HorseArcher:
                         formation.AI.SetBehaviorWeight<BehaviorSkirmish>(2.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorFireFromInfantryCover>(1.5f);
                         break;
                 }
-                
-                formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
-                formation.AI.SetBehaviorWeight<BehaviorStop>(0f);
-                formation.AI.SetBehaviorWeight<BehaviorRetreatToKeep>(0f);
-                
+                                
                 formation.AI.Tick();
                 
                 #if DEBUG

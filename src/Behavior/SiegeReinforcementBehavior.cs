@@ -27,19 +27,20 @@ namespace IronBloodSiege.Behavior
         private bool _isSpawnerEnabled = true;   // 标记是否启用援军修改
         private float _battleStartTime = 0f;     // 战斗开始时间
         private bool _wasEnabledBefore = false;  // 添加字段跟踪之前的启用状态
-        private readonly object _cleanupLock = new object();  // 线程锁
 
         // 援军生成相关
-        private const float SPAWN_INTERVAL = 5f;               // 援军生成的时间间隔
-        private const float SPAWN_CHECK_INTERVAL = 1f;       // 检查是否生成援军的时间间隔
+        private const float SPAWN_INTERVAL = 10f;               // 援军生成的时间间隔
+        private const float SPAWN_CHECK_INTERVAL = 5f;         // 检查是否生成援军的时间间隔
         // private const int SPAWN_BATCH_SIZE = 50;               // 每次生成援军的数量
         private const int MAX_TOTAL_ATTACKERS = 999999999;     // 攻击方最大数量限制
         
         // 援军统计
         private int _initialAttackerCount = 0;    // 初始攻击方数量
         private int _reinforcementCount = 0;      // 已生成的援军数量
-        private float _lastReinforcementTime = 0f;// 最后一次生成援军的时间
-        private List<Agent> _pendingReinforcements = new List<Agent>(); // 待处理的援军
+
+        private bool? _cachedSceneValid = null;
+        private float _lastSceneCheckTime = 0f;
+        private const float SCENE_CHECK_INTERVAL = 5f;
         #endregion
 
         #region Properties
@@ -169,22 +170,15 @@ namespace IronBloodSiege.Behavior
             {
                 if (_currentMission == null) return false;
                 
-                bool isValidScene = SafetyChecks.IsSiegeSceneValid();
-                
-                #if DEBUG
-                if (!isValidScene)
+                float currentTime = _currentMission.CurrentTime;
+                if (_cachedSceneValid.HasValue && currentTime - _lastSceneCheckTime < SCENE_CHECK_INTERVAL)
                 {
-                    Util.Logger.LogDebug("场景检查", 
-                        $"场景检查失败 - " +
-                        $"Mission: {_currentMission != null}, " +
-                        $"模式: {_currentMission?.Mode}, " +
-                        $"场景名称: {_currentMission?.SceneName}, " +
-                        $"战斗类型: {_currentMission?.CombatType}, " +
-                        $"攻方Team: {_attackerTeam != null}");
+                    return _cachedSceneValid.Value;
                 }
-                #endif
                 
-                return isValidScene;
+                _lastSceneCheckTime = currentTime;
+                _cachedSceneValid = SafetyChecks.IsSiegeSceneValid();
+                return _cachedSceneValid.Value;
             }
             catch (Exception ex)
             {
@@ -269,138 +263,83 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
-                // 检查mod总开关
-                if (!Settings.Instance.IsEnabled)
+                // 基础检查
+                if (!Settings.Instance.IsEnabled || 
+                    !Settings.Instance.EnableAggressiveReinforcement || 
+                    _isDisabled || 
+                    BehaviorCleanupHelper.IsCleaningUp)
                 {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "Mod未启用，跳过援军生成");
-                    #endif
                     return;
                 }
 
                 // 检查激进援军设置
                 if (!Settings.Instance.EnableAggressiveReinforcement)
                 {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "激进援军设置未启用，跳过援军生成");
-                    #endif
                     return;
                 }
 
                 // 检查是否已禁用
                 if (_isDisabled || BehaviorCleanupHelper.IsCleaningUp)
                 {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "生成器已禁用或正在清理，跳过援军生成");
-                    #endif
                     return;
                 }
 
                 // 检查玩家是否是攻城方
                 if (SafetyChecks.IsPlayerAttacker() && !Settings.Instance.EnableWhenPlayerAttacker)
                 {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "玩家是攻城方且设置禁用，跳过援军生成");
-                    #endif
                     return;
                 }
 
                 // 安全获取Mission引用
                 _currentMission = BehaviorCleanupHelper.GetSafeMission(_currentMission);
-                if (_currentMission == null)
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "无法获取有效的Mission引用");
-                    #endif
-                    return;
-                }
+                if (_currentMission == null) return;
 
                 float currentTime = _currentMission.CurrentTime;
+                
+                // 检查时间间隔
                 if (currentTime - _lastCheckTime < SPAWN_CHECK_INTERVAL)
                 {
                     return;
                 }
                 _lastCheckTime = currentTime;
 
+                // 检查生成间隔
                 if (currentTime < _nextSpawnTime)
                 {
-                    #if DEBUG
-                    if (Math.Floor(currentTime) % 10 == 0)
-                    {
-                        Util.Logger.LogDebug("援军生成", 
-                            $"等待下次生成 - 当前时间: {currentTime:F2}, " +
-                            $"下次生成: {_nextSpawnTime:F2}");
-                    }
-                    #endif
                     return;
                 }
 
                 // 获取生成逻辑组件
                 var spawnLogic = _currentMission.GetMissionBehavior<MissionAgentSpawnLogic>();
-                if (spawnLogic == null)
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", "无法获取生成逻辑组件");
-                    #endif
-                    return;
-                }
+                if (spawnLogic == null) return;
 
-                try
+                // 检查是否有可生成的援军
+                if (spawnLogic.NumberOfRemainingAttackerTroops <= 0)
                 {
                     // 获取当前战场信息
                     int currentAttackerCount = spawnLogic.NumberOfActiveAttackerTroops;
                     int remainingAttackers = spawnLogic.NumberOfRemainingAttackerTroops;
                     int totalAgents = spawnLogic.NumberOfAgents;
                     int battleSize = spawnLogic.BattleSize;
-
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", 
-                        $"检查生成条件 - 当前攻方数量: {currentAttackerCount}, " +
-                        $"剩余可生成: {remainingAttackers}, " +
-                        $"当前战场人数: {totalAgents}, " +
-                        $"战场大小: {battleSize}");
-                    #endif
                     
-                    // 如果没有剩余可生成的士兵，直接返回
+                    // 如果没有剩余可生成的士兵，自动禁用功能
                     if (remainingAttackers <= 0) 
                     {
                         #if DEBUG
-                        Util.Logger.LogDebug("援军生成", "无可生成的援军");
+                        Util.Logger.LogDebug("援军生成", "无可生成的援军，自动禁用功能");
                         #endif
+                        
+                        // 禁用功能
+                        OnModDisabled();
                         return;
                     }
-
-                    // 原生系统来控制生成数量和时机
-                    #if DEBUG
-                    Util.Logger.LogDebug("援军生成", 
-                        $"正在生成援军 - 当前攻方数量: {currentAttackerCount}, " +
-                        $"剩余可生成: {remainingAttackers}, " +
-                        $"当前战场人数: {totalAgents}, " +
-                        $"战场大小: {battleSize}");
-                    #endif
-
-                    try
-                    {
-                        // 使用正确的API来控制生成
-                        spawnLogic.SetSpawnTroops(BattleSideEnum.Attacker, true, true);
-                        _nextSpawnTime = currentTime + SPAWN_INTERVAL;
-                        
-                        #if DEBUG
-                        Util.Logger.LogDebug("援军生成", 
-                            $"启动生成器 - 当前攻方数量: {currentAttackerCount}, " +
-                            $"剩余可生成: {remainingAttackers}, " +
-                            $"当前总人数: {totalAgents}, " +
-                            $"战场大小: {battleSize}");
-                        #endif
-                    }
-                    catch (Exception)
-                    {
-                        _nextSpawnTime = currentTime + SPAWN_INTERVAL * 2;
-                    }
                 }
-                catch (Exception)
+
+                // 只在真正需要生成时才调用API
+                if (!spawnLogic.IsSideSpawnEnabled(BattleSideEnum.Attacker))
                 {
-                    _lastCheckTime = currentTime + SPAWN_CHECK_INTERVAL * 2;
+                    spawnLogic.SetSpawnTroops(BattleSideEnum.Attacker, true, true);
+                    _nextSpawnTime = currentTime + SPAWN_INTERVAL;
                 }
             }
             catch (Exception ex)
@@ -529,6 +468,8 @@ namespace IronBloodSiege.Behavior
         {
             _isSiegeScene = false;
             _isSpawnerEnabled = false;
+            _cachedSceneValid = null;
+            _lastSceneCheckTime = 0f;
         }
 
         private void HandleError(string context, Exception ex)

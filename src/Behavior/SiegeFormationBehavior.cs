@@ -6,7 +6,7 @@ using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using IronBloodSiege.Util;
 using IronBloodSiege.Setting;
-using TaleWorlds.MountAndBlade.Source.Missions.Handlers;
+using IronBloodSiege.Logic;
 
 namespace IronBloodSiege.Behavior
 {
@@ -14,18 +14,23 @@ namespace IronBloodSiege.Behavior
     {
         #region Fields
         // 使用HashSet存储Formation
-        private HashSet<Formation> _advancedFormations;
+        private HashSet<Formation> _atkFormations;
         
         // 缓存Mission.Current以减少访问次数
         private Mission _currentMission;
         
         private Team _attackerTeam;
+        private Team _defenderTeam;  // 缓存守城方Team引用，用于快速判断
         
         private bool _isSiegeScene = false;      // 是否是攻城场景
         private bool _wasEnabledBefore = false;  // 添加字段跟踪之前的启用状态
         private bool _isDisabled = false;        // 是否禁用
         private bool _isCleanedUp = false;       // 清理标记
         private readonly object _cleanupLock = new object();
+        
+        // 用于控制检查频率
+        private const float CHECK_INTERVAL = 1f;  // 每秒检查一次
+        private float _lastCheckTime = 0f;
         #endregion
 
         #region Properties
@@ -38,13 +43,24 @@ namespace IronBloodSiege.Behavior
             base.OnBehaviorInitialize();
             try
             {
-                // 记录初始启用状态
                 _wasEnabledBefore = Settings.Instance.IsEnabled;
                 if (!_wasEnabledBefore) return;
 
                 _currentMission = Mission.Current;
-                _attackerTeam = _currentMission?.AttackerTeam;
-                _advancedFormations = new HashSet<Formation>();
+                if (_currentMission == null) return;
+
+                // 缓存双方Team引用
+                _attackerTeam = _currentMission.AttackerTeam;
+                _defenderTeam = _currentMission.DefenderTeam;
+                
+                // 如果任一Team无效，直接禁用
+                if (_attackerTeam == null || _defenderTeam == null)
+                {
+                    OnModDisabled();
+                    return;
+                }
+
+                _atkFormations = new HashSet<Formation>();
 
                 // 等待场景检查完全完成
                 int checkCount = 0;
@@ -80,45 +96,6 @@ namespace IronBloodSiege.Behavior
             }
         }
 
-        public override void OnAgentBuild(Agent agent, Banner banner)
-        {
-            base.OnAgentBuild(agent, banner);
-            try
-            {
-                // 如果mod未启用，直接返回
-                if (!Settings.Instance.IsEnabled) return;
-                
-                if (!_isSiegeScene || 
-                    !SafetyChecks.IsValidAgent(agent) || 
-                    agent.Team == null ||
-                    agent.Team != Mission.Current?.AttackerTeam ||
-                    agent.Team.IsDefender ||
-                    agent.IsPlayerControlled)
-                    return;
-                    
-                agent.SetMorale(100f);
-                
-                // 禁用撤退标志
-                agent.SetAgentFlags(agent.GetAgentFlags() & ~AgentFlag.CanRetreat);
-                
-                // 设置为进攻性AI行为
-                // agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.Charge);
-                              
-                // 如果mod未禁用，给新刷出的士兵设置进攻命令
-                if (!_isDisabled && agent.Formation != null)
-                {
-                    PreventRetreat(agent.Formation);
-                    
-                    // 立即更新agent的缓存值
-                    agent.UpdateCachedAndFormationValues(true, false);
-                }
-            }
-            catch (Exception ex)
-            {
-                HandleError("agent build", ex);
-            }
-        }
-
         protected override void OnEndMission()
         {
             try
@@ -127,10 +104,10 @@ namespace IronBloodSiege.Behavior
                 {
                     lock (_cleanupLock)
                     {
-                        if (_advancedFormations != null)
+                        if (_atkFormations != null)
                         {
                             // 创建一个副本来遍历，避免集合修改异常
-                            var formationsToRestore = _advancedFormations.ToList();
+                            var formationsToRestore = _atkFormations.ToList();
                             foreach (var formation in formationsToRestore)
                             {
                                 if (formation != null)
@@ -138,12 +115,13 @@ namespace IronBloodSiege.Behavior
                                     BehaviorCleanupHelper.RestoreFormation(formation);
                                 }
                             }
-                            _advancedFormations.Clear();
+                            _atkFormations.Clear();
                         }
 
                         // 重置所有状态
                         _currentMission = null;
                         _attackerTeam = null;
+                        _defenderTeam = null;
                         _isSiegeScene = false;
                         _wasEnabledBefore = false;
                         _isDisabled = true;
@@ -174,6 +152,7 @@ namespace IronBloodSiege.Behavior
                     // 重置所有状态
                     _currentMission = null;
                     _attackerTeam = null;
+                    _defenderTeam = null;
                     _isSiegeScene = false;
                     _wasEnabledBefore = false;
                     _isDisabled = true;
@@ -227,112 +206,54 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
-                // 如果mod未启用或Formation无效，直接返回
-                if (!Settings.Instance.IsEnabled || !SafetyChecks.IsValidFormation(formation)) 
-                {
-                    return;
-                }
-                
-                // 严格检查是否为攻城方Formation
-                if (formation.Team == null || 
+                // 快速检查
+                if (!Settings.Instance.IsEnabled || 
+                    formation == null || 
+                    formation.Team == null) return;
+
+                // 严格的Team检查
+                if (formation.Team == _defenderTeam || 
                     formation.Team != _attackerTeam || 
-                    formation.Team.IsDefender)
-                {
-                    return;
-                }
-                
-                // 检查是否是玩家控制的Formation
-                if (formation.PlayerOwner != null || 
-                    formation.Captain?.IsPlayerControlled == true)
+                    formation.Team.IsDefender || 
+                    formation.PlayerOwner != null || 
+                    formation.Captain?.IsPlayerControlled == true) return;
+
+                try
                 {
                     #if DEBUG
                     Util.Logger.LogDebug("防止撤退", 
-                        $"跳过玩家控制的Formation: {formation.FormationIndex}");
+                        $"处理攻城方Formation: {formation.FormationIndex}");
                     #endif
-                    return;
-                }
-                
-                // 检查玩家是否是攻城方
-                if (SafetyChecks.IsPlayerAttacker())
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("防止撤退", 
-                        $"玩家是攻城方，跳过AI控制设置");
-                    #endif
-                    return;
-                }
-                
-                if (!_advancedFormations.Contains(formation))
-                {
-                    try
-                    {
-                        #if DEBUG
-                        Util.Logger.LogDebug("防止撤退", 
-                            $"处理攻城方Formation: {formation.FormationIndex}");
-                        #endif
 
-                        // 重置Formation的AI行为
-                        formation.AI.ResetBehaviorWeights();
-
-                        // 设置为进攻命令
-                    // formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
+                    // 应用AI战术
+                    SiegeAIBehavior.ApplyAttackBehavior(formation);
                     
-                        
-                        // 增加进攻性AI行为权重
-                        // formation.AI.SetBehaviorWeight<BehaviorCharge>(0.8f);
-                        // formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.8f);
-                        
-                        // 禁用可能导致停止的行为
-                        // formation.AI.SetBehaviorWeight<BehaviorStop>(0f);
-                        // formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
-                        
-                        // 确保Formation的AI会在下一个tick重新评估行为
-                        formation.IsAITickedAfterSplit = false;
-                        
-                        // 添加到已处理列表
-                        _advancedFormations.Add(formation);
-                        
-                        // 处理所有单位
-                        formation.ApplyActionOnEachUnit(agent =>
-                        {
-                            try
-                            {
-                                if (!SafetyChecks.IsValidAgent(agent) || 
-                                    agent.Team != _attackerTeam || 
-                                    agent.Team.IsDefender || 
-                                    agent.IsPlayerControlled || 
-                                    agent.Formation?.PlayerOwner != null)
-                                    return;
-
-                                // 停止当前的撤退状态
-                                if (agent.IsRetreating())
-                                {
-                                    agent.StopRetreating();
-                                }
-                                
-                                agent.SetMorale(95f);
-                                
-                                // 禁用撤退标志
-                                agent.SetAgentFlags(agent.GetAgentFlags() & ~AgentFlag.CanRetreat);
-
-                               // 设置为进攻性AI行为
-                             // agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.Charge);
-                            }
-                            catch (Exception)
-                            {
-                                // 单个Agent处理失败不影响其他Agent
-                            }
-                        });
-                        // formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
-                    }
-                    catch (Exception)
+                    // 使用本地变量缓存Team引用，减少属性访问
+                    Team formationTeam = formation.Team;
+                    
+                    formation.ApplyActionOnEachUnit(agent =>
                     {
-                        // Formation处理失败时，从列表中移除
-                        if (_advancedFormations.Contains(formation))
+                        try
                         {
-                            _advancedFormations.Remove(formation);
+                            // 使用缓存的Team引用进行快速检查
+                            if (agent == null || 
+                                agent.Team != formationTeam || 
+                                agent.IsPlayerControlled) return;
+
+                            // 设置士气
+                            agent.SetMorale(95f);
                         }
-                    }
+                        catch
+                        {
+                            // 单个Agent处理失败不影响其他Agent
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    #if DEBUG
+                    Util.Logger.LogError("防止撤退", ex);
+                    #endif
                 }
             }
             catch (Exception ex)
@@ -386,10 +307,10 @@ namespace IronBloodSiege.Behavior
                             }
 
                             // 恢复撤退标志
-                            agent.SetAgentFlags(agent.GetAgentFlags() | AgentFlag.CanRetreat);
-                            
+                            // agent.SetAgentFlags(agent.GetAgentFlags() | AgentFlag.CanRetreat);
+                               
                             // 重置行为集为默认值
-                            agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.Default);
+                            // agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.Default);
                                          
                             // 重置士气为游戏原生默认值
                             agent.SetMorale(45f);
@@ -425,7 +346,7 @@ namespace IronBloodSiege.Behavior
                     // 重置Formation的移动命令为默认值
                     try
                     {
-                        formation.SetMovementOrder(MovementOrder.MovementOrderStop);
+                        // formation.SetMovementOrder(MovementOrder.MovementOrderStop);
                     }
                     catch
                     {
@@ -477,14 +398,14 @@ namespace IronBloodSiege.Behavior
         /// </summary>
         private void RestoreAllFormations()
         {
-            if (_advancedFormations == null) return;
+            if (_atkFormations == null) return;
             
             try
             {
                 lock (_cleanupLock)
                 {
                     // 创建一个副本来遍历，避免集合修改异常
-                    var formationsToRestore = _advancedFormations.ToList();
+                    var formationsToRestore = _atkFormations.ToList();
                     foreach (var formation in formationsToRestore)
                     {
                         if (formation != null)
@@ -503,7 +424,7 @@ namespace IronBloodSiege.Behavior
                     
                     try
                     {
-                        _advancedFormations.Clear();
+                        _atkFormations.Clear();
                     }
                     catch
                     {
@@ -576,6 +497,78 @@ namespace IronBloodSiege.Behavior
             RestoreAllFormations();
             _isSiegeScene = false;
             _isDisabled = true;
+        }
+
+        public override void OnMissionTick(float dt)
+        {
+            base.OnMissionTick(dt);
+            
+            try
+            {
+                // 快速检查
+                if (!Settings.Instance.IsEnabled || 
+                    _isDisabled || 
+                    !_isSiegeScene || 
+                    _currentMission == null || 
+                    _attackerTeam == null) return;
+
+                // 控制检查频率
+                _lastCheckTime += dt;
+                if (_lastCheckTime < CHECK_INTERVAL) return;
+                _lastCheckTime = 0f;
+
+                // 获取所有攻城方的Formation
+                var attackerFormations = _attackerTeam.FormationsIncludingEmpty
+                    .Where(f => f != null && 
+                           f.CountOfUnits > 0 && 
+                           f.PlayerOwner == null &&
+                           f.Captain?.IsPlayerControlled != true)
+                    .ToList();
+
+                foreach (var formation in attackerFormations)
+                {
+                    try
+                    {
+                        if (formation.AI == null) continue;
+
+                        // 检查Formation是否在撤退
+                        bool isRetreating = false;
+                        
+                        // 检查当前激活的行为
+                        var activeBehavior = formation.AI.ActiveBehavior;
+                        if (activeBehavior != null)
+                        {
+                            // 检查是否是任何类型的撤退行为
+                            var behaviorType = activeBehavior.GetType();
+                            isRetreating = behaviorType == typeof(BehaviorRetreat) ||
+                                         behaviorType == typeof(BehaviorRetreatToKeep);
+                        }
+
+                        // 如果检测到撤退，应用防撤退措施
+                        if (isRetreating)
+                        {
+                            #if DEBUG
+                            Util.Logger.LogDebug("撤退检测", 
+                                $"检测到Formation撤退 - 编队类型: {formation.FormationIndex}, " +
+                                $"兵种: {formation.RepresentativeClass}, " +
+                                $"当前行为: {formation.AI.ActiveBehavior?.GetType().Name ?? "无"}, " +
+                                $"单位数量: {formation.CountOfUnits}");
+                            #endif
+                            
+                            PreventRetreat(formation);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // 单个Formation处理失败不影响其他Formation
+                        continue;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleError("tick", ex);
+            }
         }
     }
 } 

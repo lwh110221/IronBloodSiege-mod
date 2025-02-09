@@ -21,7 +21,7 @@ namespace IronBloodSiege.Util
         public const float MORALE_UPDATE_INTERVAL = 1f; // 士气更新间隔
         public const float MESSAGE_COOLDOWN = 10f;      // 消息冷却时间
         public const float RETREAT_MESSAGE_COOLDOWN = 25f; // 撤退消息冷却时间
-        public const float BATTLE_START_GRACE_PERIOD = 50f; // 战斗开始缓冲期
+        public const float BATTLE_START_GRACE_PERIOD = 30f; // 战斗开始缓冲期
 
     }
 } 

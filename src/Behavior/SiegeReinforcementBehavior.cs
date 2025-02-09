@@ -5,7 +5,6 @@ using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using IronBloodSiege.Util;
 using IronBloodSiege.Setting;
-using System.Collections.Generic;
 
 namespace IronBloodSiege.Behavior
 {
@@ -263,79 +262,42 @@ namespace IronBloodSiege.Behavior
         {
             try
             {
-                // 基础检查
-                if (!Settings.Instance.IsEnabled || 
-                    !Settings.Instance.EnableAggressiveReinforcement || 
-                    _isDisabled || 
-                    BehaviorCleanupHelper.IsCleaningUp)
-                {
-                    return;
-                }
-
-                // 检查激进援军设置
-                if (!Settings.Instance.EnableAggressiveReinforcement)
-                {
-                    return;
-                }
-
-                // 检查是否已禁用
-                if (_isDisabled || BehaviorCleanupHelper.IsCleaningUp)
-                {
-                    return;
-                }
-
-                // 检查玩家是否是攻城方
-                if (SafetyChecks.IsPlayerAttacker() && !Settings.Instance.EnableWhenPlayerAttacker)
-                {
-                    return;
-                }
-
-                // 安全获取Mission引用
-                _currentMission = BehaviorCleanupHelper.GetSafeMission(_currentMission);
-                if (_currentMission == null) return;
-
-                float currentTime = _currentMission.CurrentTime;
+                // 1. 缓存当前时间，避免多次访问
+                float currentTime = _currentMission?.CurrentTime ?? 0f;
                 
-                // 检查时间间隔
+                // 2. 首先检查时间间隔，这是最快的检查
                 if (currentTime - _lastCheckTime < SPAWN_CHECK_INTERVAL)
                 {
                     return;
                 }
+
+                // 3. 更新最后检查时间
                 _lastCheckTime = currentTime;
 
-                // 检查生成间隔
+                // 4. 状态检查（只在间隔时间到达后才检查）
+                if (_isDisabled || !Settings.Instance.IsEnabled || !Settings.Instance.EnableAggressiveReinforcement)
+                {
+                    return;
+                }
+
+                // 5. 检查生成间隔
                 if (currentTime < _nextSpawnTime)
                 {
                     return;
                 }
 
-                // 获取生成逻辑组件
-                var spawnLogic = _currentMission.GetMissionBehavior<MissionAgentSpawnLogic>();
+                // 6. 获取并缓存生成逻辑组件
+                var spawnLogic = _currentMission?.GetMissionBehavior<MissionAgentSpawnLogic>();
                 if (spawnLogic == null) return;
 
-                // 检查是否有可生成的援军
+                // 7. 检查是否需要禁用
                 if (spawnLogic.NumberOfRemainingAttackerTroops <= 0)
                 {
-                    // 获取当前战场信息
-                    int currentAttackerCount = spawnLogic.NumberOfActiveAttackerTroops;
-                    int remainingAttackers = spawnLogic.NumberOfRemainingAttackerTroops;
-                    int totalAgents = spawnLogic.NumberOfAgents;
-                    int battleSize = spawnLogic.BattleSize;
-                    
-                    // 如果没有剩余可生成的士兵，自动禁用功能
-                    if (remainingAttackers <= 0) 
-                    {
-                        #if DEBUG
-                        Util.Logger.LogDebug("援军生成", "无可生成的援军，自动禁用功能");
-                        #endif
-                        
-                        // 禁用功能
-                        OnModDisabled();
-                        return;
-                    }
+                    OnModDisabled();
+                    return;
                 }
 
-                // 只在真正需要生成时才调用API
+                // 8. 只在需要时执行生成
                 if (!spawnLogic.IsSideSpawnEnabled(BattleSideEnum.Attacker))
                 {
                     spawnLogic.SetSpawnTroops(BattleSideEnum.Attacker, true, true);
@@ -345,9 +307,7 @@ namespace IronBloodSiege.Behavior
             catch (Exception ex)
             {
                 HandleError("援军生成处理", ex);
-                // 发生错误时禁用生成器
                 _isDisabled = true;
-                _isSpawnerEnabled = false;
             }
         }
         #endregion

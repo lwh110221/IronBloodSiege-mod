@@ -19,6 +19,33 @@ namespace IronBloodSiege.Behavior
         // 缓存Mission.Current以减少访问次数
         private Mission _currentMission;
         
+        // 添加新字段来跟踪已应用战术的Formation
+        private HashSet<Formation> _appliedTacticsFormations;
+        
+        // 缓存撤退行为类型集合
+        private readonly HashSet<Type> _retreatBehaviorTypes = new HashSet<Type>
+        {
+            typeof(BehaviorRetreat),
+            typeof(BehaviorRetreatToKeep)
+        };
+        
+        // Formation状态追踪
+        private class FormationState
+        {
+            public bool HasAppliedTactics { get; set; }
+            public DateTime LastTacticsApplyTime { get; set; }
+            public int RetreatingDetectionCount { get; set; }
+            
+            public FormationState()
+            {
+                HasAppliedTactics = false;
+                LastTacticsApplyTime = DateTime.MinValue;
+                RetreatingDetectionCount = 0;
+            }
+        }
+        
+        private readonly Dictionary<Formation, FormationState> _formationStates = new Dictionary<Formation, FormationState>();
+        
         private Team _attackerTeam;
         private Team _defenderTeam;  // 缓存守城方Team引用，用于快速判断
         
@@ -50,6 +77,10 @@ namespace IronBloodSiege.Behavior
                 _currentMission = Mission.Current;
                 if (_currentMission == null) return;
 
+                // 初始化Formation跟踪集合
+                _atkFormations = new HashSet<Formation>();
+                _appliedTacticsFormations = new HashSet<Formation>();
+
                 // 缓存双方Team引用
                 _attackerTeam = _currentMission.AttackerTeam;
                 _defenderTeam = _currentMission.DefenderTeam;
@@ -60,8 +91,6 @@ namespace IronBloodSiege.Behavior
                     OnModDisabled();
                     return;
                 }
-
-                _atkFormations = new HashSet<Formation>();
 
                 // 等待场景检查完全完成
                 int checkCount = 0;
@@ -127,6 +156,9 @@ namespace IronBloodSiege.Behavior
                         _wasEnabledBefore = false;
                         _isDisabled = true;
                         _isCleanedUp = true;
+
+                        // 清理应用战术记录
+                        _appliedTacticsFormations?.Clear();
 
                         #if DEBUG
                         Util.Logger.LogDebug("任务结束", "Formation行为完成清理");
@@ -322,6 +354,8 @@ namespace IronBloodSiege.Behavior
                     try
                     {
                         _atkFormations.Clear();
+                        _appliedTacticsFormations?.Clear();
+                        _formationStates?.Clear();
                     }
                     catch
                     {
@@ -336,6 +370,48 @@ namespace IronBloodSiege.Behavior
             catch (Exception ex)
             {
                 HandleError("restore all formations", ex);
+            }
+        }
+
+        // 添加Formation状态检查和清理方法
+        private void CleanupInvalidFormations()
+        {
+            if (_formationStates == null) return;
+            
+            try
+            {
+                var invalidFormations = _formationStates.Keys
+                    .Where(f => f == null || f.CountOfUnits == 0)
+                    .ToList();
+                    
+                foreach (var formation in invalidFormations)
+                {
+                    _formationStates.Remove(formation);
+                    _appliedTacticsFormations.Remove(formation);
+                    
+                    #if DEBUG
+                    Util.Logger.LogDebug("Formation清理", 
+                        $"移除无效Formation - ID: {formation?.FormationIndex.ToString() ?? "未知"}");
+                    #endif
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleError("cleanup invalid formations", ex);
+            }
+        }
+
+        // 优化撤退检测方法
+        private bool IsRetreating(Formation formation)
+        {
+            try
+            {
+                if (formation?.AI?.ActiveBehavior == null) return false;
+                return _retreatBehaviorTypes.Contains(formation.AI.ActiveBehavior.GetType());
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
         #endregion
@@ -414,6 +490,9 @@ namespace IronBloodSiege.Behavior
                 if (_lastCheckTime < CHECK_INTERVAL) return;
                 _lastCheckTime = 0f;
 
+                // 清理无效Formation
+                CleanupInvalidFormations();
+
                 // 获取所有攻城方的Formation
                 var attackerFormations = _attackerTeam.FormationsIncludingEmpty
                     .Where(f => f != null && 
@@ -428,23 +507,27 @@ namespace IronBloodSiege.Behavior
                     {
                         if (formation.AI == null) continue;
 
-                        // 检查Formation是否在撤退
-                        bool isRetreating = false;
-                        
-                        // 检查当前激活的行为
-                        var activeBehavior = formation.AI.ActiveBehavior;
-                        if (activeBehavior != null)
+                        // 获取或创建Formation状态
+                        if (!_formationStates.TryGetValue(formation, out var state))
                         {
-                            // 检查是否是任何类型的撤退行为
-                            var behaviorType = activeBehavior.GetType();
-                            isRetreating = behaviorType == typeof(BehaviorRetreat) ||
-                                         behaviorType == typeof(BehaviorRetreatToKeep);
+                            state = new FormationState();
+                            _formationStates[formation] = state;
                         }
+
+                        // 检查Formation是否在撤退
+                        bool isRetreating = IsRetreating(formation);
 
                         // 如果检测到撤退，开启防撤退功能
                         if (isRetreating && !_isOpenPreventRetreat)
                         {
                             _isOpenPreventRetreat = true;
+                            _appliedTacticsFormations.Clear();
+                            foreach (var fs in _formationStates.Values)
+                            {
+                                fs.HasAppliedTactics = false;
+                                fs.RetreatingDetectionCount = 0;
+                            }
+                            
                             #if DEBUG
                             Util.Logger.LogDebug("撤退检测",
                                 $"首次检测到Formation撤退，开启防撤退功能 - 编队类型: {formation.FormationIndex}, " +
@@ -454,30 +537,55 @@ namespace IronBloodSiege.Behavior
                             #endif
                         }
 
-                        // 如果防撤退功能已开启，则持续执行
-                        if (_isOpenPreventRetreat)
+                        // 如果防撤退功能已开启，且该Formation还未应用过战术
+                        if (_isOpenPreventRetreat && !state.HasAppliedTactics)
                         {
                             SiegeAIBehavior.ApplyAttackBehavior(formation);
-                            // 使用本地变量缓存Team引用，减少属性访问
-                            Team formationTeam = formation.Team;
+                            _appliedTacticsFormations.Add(formation);
+                            state.HasAppliedTactics = true;
+                            state.LastTacticsApplyTime = DateTime.Now;
+                            state.RetreatingDetectionCount = 0;
+                            
+                            #if DEBUG
+                            Util.Logger.LogDebug("战术应用",
+                                $"已对Formation应用攻城战术 - 编队类型: {formation.FormationIndex}, " +
+                                $"兵种: {formation.RepresentativeClass}");
+                            #endif
+                        }
 
-                            // formation.ApplyActionOnEachUnit(agent =>
-                            // {
-                            //     try
-                            //     {
-                            //         // 使用缓存的Team引用进行快速检查
-                            //         if (agent == null ||
-                            //             agent.Team != formationTeam ||
-                            //             agent.IsPlayerControlled) return;
+                        // 如果Formation的当前行为又变成了撤退
+                        if (_isOpenPreventRetreat && state.HasAppliedTactics && isRetreating)
+                        {
+                            state.RetreatingDetectionCount++;
+                            
+                            // 如果连续多次检测到撤退，重新应用战术
+                            if (state.RetreatingDetectionCount >= 2)
+                            {
+                                #if DEBUG
+                                Util.Logger.LogDebug("战术重置",
+                                    $"Formation连续{state.RetreatingDetectionCount}次出现撤退行为，将重新应用战术 - " +
+                                    $"编队类型: {formation.FormationIndex}, " +
+                                    $"当前行为: {formation.AI.ActiveBehavior?.GetType().Name ?? "无"}");
+                                #endif
 
-                            //         // 设置士气
-                            //         agent.SetMorale(90f);
-                            //     }
-                            //     catch
-                            //     {
-                            //         // 单个Agent处理失败不影响其他Agent
-                            //     }
-                            // });
+                                _appliedTacticsFormations.Remove(formation);
+                                state.HasAppliedTactics = false;
+                                state.RetreatingDetectionCount = 0;
+                            }
+                        }
+                        else
+                        {
+                            // 如果没有检测到撤退，重置计数
+                            if (state.RetreatingDetectionCount > 0)
+                            {
+                                #if DEBUG
+                                Util.Logger.LogDebug("撤退计数重置",
+                                    $"Formation不再撤退，重置计数 - " +
+                                    $"编队类型: {formation.FormationIndex}, " +
+                                    $"当前行为: {formation.AI.ActiveBehavior?.GetType().Name ?? "无"}");
+                                #endif
+                            }
+                            state.RetreatingDetectionCount = 0;
                         }
                     }
                     catch (Exception)

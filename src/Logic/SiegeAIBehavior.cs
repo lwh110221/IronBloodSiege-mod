@@ -1,7 +1,7 @@
 using TaleWorlds.MountAndBlade;
 using System;
-using System.Linq;
-using TaleWorlds.Library;
+using TaleWorlds.Core;
+using IronBloodSiege.Behavior;
 
 namespace IronBloodSiege.Logic
 {
@@ -19,29 +19,108 @@ namespace IronBloodSiege.Logic
                 // 重新激活原生攻城战术
                 if (teamAI is TeamAISiegeAttacker attackerAI)
                 {
-                    // 重置Formation的状态
-                    formation.AI.ResetBehaviorWeights();
-                    formation.SetControlledByAI(true, false);
-                    formation.IsAITickedAfterSplit = false;
-                    
+                    // 直接应用攻城战术
                     attackerAI.OnUnitAddedToFormationForTheFirstTime(formation);
-                    
-                    formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(1f);
-                    formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(1f);
-                    formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(1f);
+                    formation.IsAITickedAfterSplit = false;
 
+                    formation.AI.AddAiBehavior(new BehaviorAttackGates(formation));
                     formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
                     formation.AI.SetBehaviorWeight<BehaviorRetreatToKeep>(0f);
-                    formation.AI.SetBehaviorWeight<BehaviorPullBack>(0f);
-
-                    if (teamAI.OuterGate != null || teamAI.InnerGate != null)
+                    formation.AI.SetBehaviorWeight<BehaviorPullBack>(0.1f);
+                    
+                    // 检查城门状态
+                    bool hasDestroyedGates = CheckForDestroyedGates(teamAI);
+                    
+                    switch (formation.RepresentativeClass)
                     {
-                        formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(2f);
-                        formation.AI.SetBehaviorWeight<BehaviorDestroySiegeWeapons>(2f);
-                    }
-
-                    // 强制Formation的AI立即更新
+                        case FormationClass.Infantry:
+                        case FormationClass.HeavyInfantry:
+                        case FormationClass.Cavalry:
+                        case FormationClass.LightCavalry:
+                        case FormationClass.HeavyCavalry:
+                        case FormationClass.NumberOfDefaultFormations:
+                            if (hasDestroyedGates)
+                            {
+                                formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
+                                // 城门已破坏时的权重分配
+                                formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0.5f);   
+                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.1f); 
+                                formation.AI.SetBehaviorWeight<BehaviorCharge>(1.0f);        
+                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.5f);   
+                                formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.4f);
+                                formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.4f);
+                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0f);
+                                
+                                // 设置辅助行为权重
+                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0f); 
+                                formation.AI.SetBehaviorWeight<BehaviorReserve>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorStop>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0f);
+                                formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0f);
+                            }
+                            else
+                            {
+                                // 城门未破坏时的权重分配
+                                formation.AI.SetBehaviorWeight<BehaviorAttackGates>(1.0f);
+                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.9f);
+                                formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.85f);
+                                formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.8f);
+                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.5f);
+                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0f);
+                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorReserve>(0.4f);
+                                formation.AI.SetBehaviorWeight<BehaviorStop>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorCharge>(0.9f);
+                                formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0f);
+                                formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0f);
+                            }
+                            break;
+                            
+                        case FormationClass.Ranged:
+                        case FormationClass.HorseArcher:
+                        case FormationClass.General:
+                            if (hasDestroyedGates)
+                            {
+                                // 远程单位在城门破坏后的权重
+                                formation.SetMovementOrder(MovementOrder.MovementOrderAdvance);
+                                formation.AI.SetBehaviorWeight<BehaviorCharge>(1.0f);
+                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.2f);
+                                formation.AI.SetBehaviorWeight<BehaviorReserve>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorStop>(0.2f);
+                                formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.2f);
+                                formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0.1f);
+                            }
+                            else
+                            {
+                                // 远程单位在城门未破坏时的权重
+                                formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0.7f);
+                                formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0.7f);
+                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0.5f);
+                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.7f);
+                                formation.AI.SetBehaviorWeight<BehaviorReserve>(0.5f);
+                                formation.AI.SetBehaviorWeight<BehaviorStop>(0.4f);
+                                formation.AI.SetBehaviorWeight<BehaviorCharge>(0.6f);
+                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.8f);
+                                formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0.2f);
+                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.1f);
+                            }
+                            break;
+                    }                   
                     formation.AI.Tick();
+                    
+                    #if DEBUG
+                    Util.Logger.LogDebug("AI战术", 
+                        $"应用攻城战术 - 编队类型: {formation.FormationIndex}, " +
+                        $"城门状态: {(hasDestroyedGates ? "已破坏" : "未破坏")}");
+                    #endif
                 }
             }
             catch (Exception ex)
@@ -50,6 +129,21 @@ namespace IronBloodSiege.Logic
                 Util.Logger.LogError("AI战术", ex);
                 #endif
             }
+        }
+
+        private static bool CheckForDestroyedGates(TeamAISiegeComponent teamAI)
+        {
+            // 检查外门
+            bool outerGateAvailable = teamAI.OuterGate != null && 
+                                     !teamAI.OuterGate.IsDestroyed && 
+                                     teamAI.OuterGate.State == CastleGate.GateState.Closed;
+                                     
+            // 检查内门
+            bool innerGateAvailable = teamAI.InnerGate != null && 
+                                     !teamAI.InnerGate.IsDestroyed && 
+                                     teamAI.InnerGate.State == CastleGate.GateState.Closed;
+            
+            return !outerGateAvailable && !innerGateAvailable;
         }
     }
 }

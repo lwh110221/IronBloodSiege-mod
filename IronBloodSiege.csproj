@@ -95,6 +95,8 @@
     <Compile Include="src\Behavior\SiegeReinforcementBehavior.cs" />
     <Compile Include="src\Behavior\SiegeMoraleManagerBehavior.cs" />
     <Compile Include="src\Behavior\IModBehavior.cs" />
+    <Compile Include="src\Logic\SiegeAIBehavior.cs" />
+    <Compile Include="src\Behavior\BehaviorAttackGates.cs" />
     <Compile Include="src\Util\BehaviorCleanupHelper.cs" />
     <Compile Include="src\Setting\Settings.cs" />
     <Compile Include="src\Util\SafetyChecks.cs" />

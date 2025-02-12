@@ -1,12 +1,10 @@
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.Core;
 using System;
+using System.Linq;
+using TaleWorlds.Library;
 
 namespace IronBloodSiege.Logic
 {
-    /// <summary>
-    /// 攻城战AI战术
-    /// </summary>
     public static class SiegeAIBehavior
     {
         public static void ApplyAttackBehavior(Formation formation)
@@ -14,45 +12,37 @@ namespace IronBloodSiege.Logic
             if (formation?.AI == null || formation.Team == null) return;
 
             try
-            {   
-                formation.AI.ResetBehaviorWeights();
+            {
+                var teamAI = formation.Team.TeamAI as TeamAISiegeComponent;
+                if (teamAI == null) return;
 
-                formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
-                formation.AI.SetBehaviorWeight<BehaviorRetreatToKeep>(0f);
-                
-                formation.SetControlledByAI(true, false);
-                
-                switch (formation.RepresentativeClass)
+                // 重新激活原生攻城战术
+                if (teamAI is TeamAISiegeAttacker attackerAI)
                 {
-                    case FormationClass.Infantry:
-                    case FormationClass.HeavyInfantry:
-                    case FormationClass.Cavalry:
-                    case FormationClass.LightCavalry:
-                    case FormationClass.HeavyCavalry:
-                        formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(3.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(3.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(3.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorDestroySiegeWeapons>(2.5f);
-                        formation.AI.SetBehaviorWeight<BehaviorAdvance>(2.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorRegroup>(1.0f);
-                        formation.AI.SetBehaviorWeight<BehaviorStop>(0.1f);
-                        break;
-                        
-                    case FormationClass.Ranged:
-                    case FormationClass.HorseArcher:
-                        formation.AI.SetBehaviorWeight<BehaviorSkirmish>(2.0f);
-                        break;
+                    // 重置Formation的状态
+                    formation.AI.ResetBehaviorWeights();
+                    formation.SetControlledByAI(true, false);
+                    formation.IsAITickedAfterSplit = false;
+                    
+                    attackerAI.OnUnitAddedToFormationForTheFirstTime(formation);
+                    
+                    formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(1f);
+                    formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(1f);
+                    formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(1f);
+
+                    formation.AI.SetBehaviorWeight<BehaviorRetreat>(0f);
+                    formation.AI.SetBehaviorWeight<BehaviorRetreatToKeep>(0f);
+                    formation.AI.SetBehaviorWeight<BehaviorPullBack>(0f);
+
+                    if (teamAI.OuterGate != null || teamAI.InnerGate != null)
+                    {
+                        formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(2f);
+                        formation.AI.SetBehaviorWeight<BehaviorDestroySiegeWeapons>(2f);
+                    }
+
+                    // 强制Formation的AI立即更新
+                    formation.AI.Tick();
                 }
-                                
-                formation.AI.Tick();
-                
-                #if DEBUG
-                Util.Logger.LogDebug("AI战术", 
-                    $"已设置战术 - Formation: {formation.FormationIndex}, " +
-                    $"兵种: {formation.RepresentativeClass}, " +
-                    $"当前行为: {formation.AI.ActiveBehavior?.GetType().Name ?? "无"}, " +
-                    $"单位数量: {formation.CountOfUnits}");
-                #endif
             }
             catch (Exception ex)
             {

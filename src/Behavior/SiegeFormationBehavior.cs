@@ -30,7 +30,8 @@ namespace IronBloodSiege.Behavior
         
         // 用于控制检查频率
         private const float CHECK_INTERVAL = 1f;  // 每秒检查一次
-        private float _lastCheckTime = 0f;
+        private float _lastCheckTime = 0f;   
+        private bool _isOpenPreventRetreat = false;
         #endregion
 
         #region Properties
@@ -167,101 +168,9 @@ namespace IronBloodSiege.Behavior
                 base.OnRemoveBehavior();
             }
         }
-
-        private bool CheckIfSiegeScene()
-        {
-            try
-            {
-                if (_currentMission == null) return false;
-                
-                bool isValidScene = SafetyChecks.IsSiegeSceneValid();
-                
-                #if DEBUG
-                if (!isValidScene)
-                {
-                    Util.Logger.LogDebug("场景检查", 
-                        $"场景检查失败 - " +
-                        $"Mission: {_currentMission != null}, " +
-                        $"Mode: {_currentMission?.Mode}, " +
-                        $"Scene: {_currentMission?.SceneName}, " +
-                        $"AttackerTeam: {_attackerTeam != null}");
-                }
-                #endif
-                
-                return isValidScene;
-            }
-            catch (Exception ex)
-            {
-                HandleError("场景检查", ex);
-                return false;
-            }
-        }
         #endregion
 
         #region Formation Control
-        /// <summary>
-        /// 防止撤退并恢复Formation的移动
-        /// </summary>
-        private void PreventRetreat(Formation formation)
-        {
-            try
-            {
-                // 快速检查
-                if (!Settings.Instance.IsEnabled || 
-                    formation == null || 
-                    formation.Team == null) return;
-
-                // 严格的Team检查
-                if (formation.Team == _defenderTeam || 
-                    formation.Team != _attackerTeam || 
-                    formation.Team.IsDefender || 
-                    formation.PlayerOwner != null || 
-                    formation.Captain?.IsPlayerControlled == true) return;
-
-                try
-                {
-                    #if DEBUG
-                    Util.Logger.LogDebug("防止撤退", 
-                        $"处理攻城方Formation: {formation.FormationIndex}");
-                    #endif
-
-                    // 应用AI战术
-                    SiegeAIBehavior.ApplyAttackBehavior(formation);
-                    
-                    // 使用本地变量缓存Team引用，减少属性访问
-                    Team formationTeam = formation.Team;
-                    
-                    formation.ApplyActionOnEachUnit(agent =>
-                    {
-                        try
-                        {
-                            // 使用缓存的Team引用进行快速检查
-                            if (agent == null || 
-                                agent.Team != formationTeam || 
-                                agent.IsPlayerControlled) return;
-
-                            // 设置士气
-                            agent.SetMorale(95f);
-                        }
-                        catch
-                        {
-                            // 单个Agent处理失败不影响其他Agent
-                        }
-                    });
-                }
-                catch (Exception ex)
-                {
-                    #if DEBUG
-                    Util.Logger.LogError("防止撤退", ex);
-                    #endif
-                }
-            }
-            catch (Exception ex)
-            {
-                HandleError("prevent retreat", ex);
-            }
-        }
-
         /// <summary>
         /// 恢复原生系统控制
         /// </summary>
@@ -299,18 +208,6 @@ namespace IronBloodSiege.Behavior
                                 agent.IsPlayerControlled || 
                                 agent.Formation?.PlayerOwner != null)
                                 continue;
-
-                            // 先停止当前的撤退状态
-                            if (agent.IsRetreating())
-                            {
-                                agent.StopRetreating();
-                            }
-
-                            // 恢复撤退标志
-                            // agent.SetAgentFlags(agent.GetAgentFlags() | AgentFlag.CanRetreat);
-                               
-                            // 重置行为集为默认值
-                            // agent.SetBehaviorValueSet(HumanAIComponent.BehaviorValueSet.Default);
                                          
                             // 重置士气为游戏原生默认值
                             agent.SetMorale(45f);
@@ -544,18 +441,43 @@ namespace IronBloodSiege.Behavior
                                          behaviorType == typeof(BehaviorRetreatToKeep);
                         }
 
-                        // 如果检测到撤退，应用防撤退措施
-                        if (isRetreating)
+                        // 如果检测到撤退，开启防撤退功能
+                        if (isRetreating && !_isOpenPreventRetreat)
                         {
+                            _isOpenPreventRetreat = true;
                             #if DEBUG
-                            Util.Logger.LogDebug("撤退检测", 
-                                $"检测到Formation撤退 - 编队类型: {formation.FormationIndex}, " +
+                            Util.Logger.LogDebug("撤退检测",
+                                $"首次检测到Formation撤退，开启防撤退功能 - 编队类型: {formation.FormationIndex}, " +
                                 $"兵种: {formation.RepresentativeClass}, " +
                                 $"当前行为: {formation.AI.ActiveBehavior?.GetType().Name ?? "无"}, " +
                                 $"单位数量: {formation.CountOfUnits}");
                             #endif
-                            
-                            PreventRetreat(formation);
+                        }
+
+                        // 如果防撤退功能已开启，则持续执行
+                        if (_isOpenPreventRetreat)
+                        {
+                            SiegeAIBehavior.ApplyAttackBehavior(formation);
+                            // 使用本地变量缓存Team引用，减少属性访问
+                            Team formationTeam = formation.Team;
+
+                            // formation.ApplyActionOnEachUnit(agent =>
+                            // {
+                            //     try
+                            //     {
+                            //         // 使用缓存的Team引用进行快速检查
+                            //         if (agent == null ||
+                            //             agent.Team != formationTeam ||
+                            //             agent.IsPlayerControlled) return;
+
+                            //         // 设置士气
+                            //         agent.SetMorale(90f);
+                            //     }
+                            //     catch
+                            //     {
+                            //         // 单个Agent处理失败不影响其他Agent
+                            //     }
+                            // });
                         }
                     }
                     catch (Exception)

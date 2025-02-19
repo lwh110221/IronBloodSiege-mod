@@ -19,7 +19,6 @@ namespace IronBloodSiege.Logic
                 // 重新激活原生攻城战术
                 if (teamAI is TeamAISiegeAttacker attackerAI)
                 {
-                    // 直接应用攻城战术
                     attackerAI.OnUnitAddedToFormationForTheFirstTime(formation);
                     formation.IsAITickedAfterSplit = false;
 
@@ -28,7 +27,7 @@ namespace IronBloodSiege.Logic
                     formation.AI.SetBehaviorWeight<BehaviorRetreatToKeep>(0f);
                     formation.AI.SetBehaviorWeight<BehaviorPullBack>(0.1f);
                     
-                    // 检查城门状态
+                    // 城门状态
                     bool hasDestroyedGates = CheckForDestroyedGates(teamAI);
                     
                     switch (formation.RepresentativeClass)
@@ -82,15 +81,15 @@ namespace IronBloodSiege.Logic
                             if (hasDestroyedGates)
                             {
                                 // 远程单位在城门破坏后的权重
-                                formation.SetMovementOrder(MovementOrder.MovementOrderAdvance);
+                                formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
                                 formation.AI.SetBehaviorWeight<BehaviorCharge>(1.0f);
                                 formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.3f);
-                                formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0.1f);
-                                formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0f);
+                                formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0f);
                                 formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.2f);
                                 formation.AI.SetBehaviorWeight<BehaviorReserve>(0.3f);
                                 formation.AI.SetBehaviorWeight<BehaviorStop>(0.2f);
-                                formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0f);
                                 formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.2f);
                                 formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.1f);
                                 formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.1f);

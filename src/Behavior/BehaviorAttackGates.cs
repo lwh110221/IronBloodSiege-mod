@@ -20,7 +20,7 @@ namespace IronBloodSiege.Behavior
         public BehaviorAttackGates(Formation formation) : base(formation)
         {
             // 设置较低的凝聚度，让士兵更分散
-            base.BehaviorCoherence = 0.1f;
+            base.BehaviorCoherence = 0.5f;
 
             // 获取所有敌方城门
             var teamAI = formation.Team.TeamAI as TeamAISiegeComponent;
@@ -115,8 +115,8 @@ namespace IronBloodSiege.Behavior
             
             // 如果在攻击城门，确保Formation保持松散
             if (_currentTargetGate != null)
-            {
-                base.Formation.ArrangementOrder = ArrangementOrder.ArrangementOrderSquare;
+            {   
+                // base.Formation.ArrangementOrder = ArrangementOrder.ArrangementOrderSquare;
                 base.Formation.FormOrder = FormOrder.FormOrderDeep;
                 
                 // 设置面向敌人的方向
@@ -127,7 +127,7 @@ namespace IronBloodSiege.Behavior
 
         protected override void OnBehaviorActivatedAux()
         {
-            base.Formation.ArrangementOrder = ArrangementOrder.ArrangementOrderSquare;
+            // base.Formation.ArrangementOrder = ArrangementOrder.ArrangementOrderSquare;
             base.Formation.FacingOrder = FacingOrder.FacingOrderLookAtEnemy;
             base.Formation.FiringOrder = FiringOrder.FiringOrderFireAtWill;
             base.Formation.FormOrder = FormOrder.FormOrderDeep;
@@ -137,7 +137,7 @@ namespace IronBloodSiege.Behavior
         {
             if (_targetGates != null && _targetGates.Count > 0)
             {
-                return 2.0f;
+                return 1.0f;
             }
             return 0f;
         }

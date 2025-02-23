@@ -43,14 +43,12 @@ namespace IronBloodSiege.Logic
                                 formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
                                 // 城门已破坏时的权重分配
                                 formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0.5f);   
-                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.1f); 
+                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0f); 
                                 formation.AI.SetBehaviorWeight<BehaviorCharge>(1.0f);        
                                 formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.5f);   
                                 formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.4f);
                                 formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.4f);
                                 formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0f);
-                                
-                                // 设置辅助行为权重
                                 formation.AI.SetBehaviorWeight<BehaviorRegroup>(0f); 
                                 formation.AI.SetBehaviorWeight<BehaviorReserve>(0.3f);
                                 formation.AI.SetBehaviorWeight<BehaviorStop>(0.1f);
@@ -61,12 +59,12 @@ namespace IronBloodSiege.Logic
                             {
                                 // 城门未破坏时的权重分配
                                 formation.AI.SetBehaviorWeight<BehaviorAttackGates>(1.0f);
-                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.9f);
+                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.5f);
                                 formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.85f);
                                 formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.8f);
                                 formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.5f);
                                 formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0f);
-                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.1f);
                                 formation.AI.SetBehaviorWeight<BehaviorReserve>(0.4f);
                                 formation.AI.SetBehaviorWeight<BehaviorStop>(0.3f);
                                 formation.AI.SetBehaviorWeight<BehaviorCharge>(0.9f);
@@ -83,27 +81,27 @@ namespace IronBloodSiege.Logic
                                 // 远程单位在城门破坏后的权重
                                 formation.SetMovementOrder(MovementOrder.MovementOrderCharge);
                                 formation.AI.SetBehaviorWeight<BehaviorCharge>(1.0f);
-                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.3f);
+                                formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.2f);
                                 formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0f);
                                 formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0f);
-                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.2f);
+                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0f);
                                 formation.AI.SetBehaviorWeight<BehaviorReserve>(0.3f);
                                 formation.AI.SetBehaviorWeight<BehaviorStop>(0.2f);
                                 formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0f);
-                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.2f);
+                                formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.6f);
                                 formation.AI.SetBehaviorWeight<BehaviorUseSiegeMachines>(0.1f);
                                 formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.1f);
-                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0f);
                             }
                             else
                             {
                                 // 远程单位在城门未破坏时的权重
                                 formation.AI.SetBehaviorWeight<BehaviorSkirmish>(0.7f);
                                 formation.AI.SetBehaviorWeight<BehaviorSparseSkirmish>(0.7f);
-                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0.5f);
-                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0.7f);
+                                formation.AI.SetBehaviorWeight<BehaviorShootFromSiegeTower>(0.1f);
+                                formation.AI.SetBehaviorWeight<BehaviorRegroup>(0f);
                                 formation.AI.SetBehaviorWeight<BehaviorReserve>(0.5f);
-                                formation.AI.SetBehaviorWeight<BehaviorStop>(0.4f);
+                                formation.AI.SetBehaviorWeight<BehaviorStop>(0.1f);
                                 formation.AI.SetBehaviorWeight<BehaviorCharge>(0.6f);
                                 formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.8f);
                                 formation.AI.SetBehaviorWeight<BehaviorAttackGates>(0.2f);

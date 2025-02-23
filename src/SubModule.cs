@@ -9,6 +9,9 @@ using TaleWorlds.Localization;
 using System;
 using IronBloodSiege.Behavior;
 using IronBloodSiege.Util;
+using HarmonyLib;
+using System.Reflection;
+using System.Linq;
 
 namespace IronBloodSiege
 {
@@ -46,6 +49,27 @@ namespace IronBloodSiege
         public override void OnGameInitializationFinished(Game game)
         {
             base.OnGameInitializationFinished(game);
+            
+            // try
+            // {
+            //     var harmony = new Harmony("cn.ahao.ironbloodsiege");
+            //     Assembly assembly = typeof(SubModule).Assembly;
+            //     harmony.PatchAll(assembly);
+            //     Util.Logger.LogDebug("初始化", $"已加载程序集: {assembly.FullName}");
+            //     var patchedMethods = harmony.GetPatchedMethods().ToList();
+            //     Util.Logger.LogDebug("初始化", $"发现 {patchedMethods.Count} 个补丁方法");
+            //     foreach (var method in patchedMethods)
+            //     {
+            //         Util.Logger.LogDebug("补丁详情", 
+            //             $"{method.DeclaringType?.FullName}::{method.Name}\n" +
+            //             $"参数: {string.Join(", ", method.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"))}");
+            //     }
+            // }
+            // catch (Exception ex)
+            // {
+            //     Util.Logger.LogError("初始化", ex);
+            // }
+            
             ShowModInfo();
         }
 

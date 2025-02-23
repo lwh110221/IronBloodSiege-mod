@@ -1,10 +1,20 @@
 using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions.Base.Global;
+using MCM.Common;
 using TaleWorlds.Localization;
+using System.Linq;
 
 namespace IronBloodSiege.Setting
 {
+    public enum GateAttackFormation
+    {
+        Line,
+        ShieldWall,
+        Square,
+        Loose
+    }
+
     public class Settings : AttributeGlobalSettings<Settings>
     {
         public override string Id => "IronBloodSiege_v1";
@@ -64,6 +74,13 @@ namespace IronBloodSiege.Setting
         [SettingPropertyGroup("{=ibs_combat_settings}Combat Settings", GroupOrder = 2)]
         public float MoraleBoostRate { get; set; } = 15f;
 
+        [SettingPropertyGroup("{=ibs_formation_settings}Formation Settings", GroupOrder = 3)]
+        [SettingPropertyDropdown("{=ibs_gate_attack_formation}Gate Attack Formation", Order = 0, RequireRestart = false,
+            HintText = "{=ibs_gate_attack_formation_hint}Choose the formation type when troops attack gates Default ： Line")]
+        public Dropdown<GateAttackFormation> GateAttackFormationType { get; set; } = new Dropdown<GateAttackFormation>(
+            System.Enum.GetValues(typeof(GateAttackFormation)).Cast<GateAttackFormation>().ToArray(),
+            selectedIndex: 0);  // Default to Line
+
         public Settings()
         {
             IsEnabled = true;
@@ -75,6 +92,9 @@ namespace IronBloodSiege.Setting
             MoraleThreshold = 70f;
             MoraleBoostRate = 15f;
             EnableAggressiveReinforcement = false;
+            GateAttackFormationType = new Dropdown<GateAttackFormation>(
+                System.Enum.GetValues(typeof(GateAttackFormation)).Cast<GateAttackFormation>().ToArray(),
+                selectedIndex: 0);  // Default to Line
         }
     }
 } 

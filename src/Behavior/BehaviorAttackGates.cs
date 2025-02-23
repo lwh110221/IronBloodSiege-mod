@@ -5,6 +5,7 @@ using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.Localization;
+using IronBloodSiege.Setting;
 
 namespace IronBloodSiege.Behavior
 {
@@ -70,6 +71,23 @@ namespace IronBloodSiege.Behavior
             }
         }
 
+        private ArrangementOrder GetFormationArrangementOrder()
+        {
+            switch (Settings.Instance.GateAttackFormationType.SelectedValue)
+            {
+                case GateAttackFormation.Line:
+                    return ArrangementOrder.ArrangementOrderLine;
+                case GateAttackFormation.Square:
+                    return ArrangementOrder.ArrangementOrderSquare;
+                case GateAttackFormation.Loose:
+                    return ArrangementOrder.ArrangementOrderLoose;
+                case GateAttackFormation.ShieldWall:
+                    return ArrangementOrder.ArrangementOrderShieldWall;
+                default:
+                    return ArrangementOrder.ArrangementOrderShieldWall;
+            }
+        }
+
         public override void TickOccasionally()
         {
             base.TickOccasionally();
@@ -116,7 +134,7 @@ namespace IronBloodSiege.Behavior
             // 如果在攻击城门，确保Formation保持松散
             if (_currentTargetGate != null)
             {   
-                // base.Formation.ArrangementOrder = ArrangementOrder.ArrangementOrderSquare;
+                base.Formation.ArrangementOrder = GetFormationArrangementOrder();
                 base.Formation.FormOrder = FormOrder.FormOrderDeep;
                 
                 // 设置面向敌人的方向
@@ -127,7 +145,7 @@ namespace IronBloodSiege.Behavior
 
         protected override void OnBehaviorActivatedAux()
         {
-            // base.Formation.ArrangementOrder = ArrangementOrder.ArrangementOrderSquare;
+            base.Formation.ArrangementOrder = GetFormationArrangementOrder();
             base.Formation.FacingOrder = FacingOrder.FacingOrderLookAtEnemy;
             base.Formation.FiringOrder = FiringOrder.FiringOrderFireAtWill;
             base.Formation.FormOrder = FormOrder.FormOrderDeep;

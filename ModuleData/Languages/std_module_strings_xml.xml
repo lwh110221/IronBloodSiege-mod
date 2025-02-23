@@ -54,5 +54,10 @@
     <string id="ibs_error_init" text="IronBlood Siege initialization error: {MESSAGE}"/>
     <string id="ibs_error_general" text="IronBlood Siege error: {MESSAGE}"/>
     <string id="ibs_error_cleanup" text="IronBlood Siege cleanup error: {MESSAGE}"/>
+
+    <!-- 阵型设置 -->
+    <string id="ibs_formation_settings" text="Formation Settings"/>
+    <string id="ibs_gate_attack_formation" text="Gate Attack Formation"/>
+    <string id="ibs_gate_attack_formation_hint" text="Choose the formation type when troops attack gates Default ： Line"/>
   </strings>
 </base>

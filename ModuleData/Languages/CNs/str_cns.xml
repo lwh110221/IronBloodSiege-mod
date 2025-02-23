@@ -55,5 +55,10 @@
     <string id="ibs_error_init" text="铁血攻城初始化错误: {MESSAGE}" />
     <string id="ibs_error_general" text="铁血攻城错误: {MESSAGE}" />
     <string id="ibs_error_cleanup" text="铁血攻城清理错误: {MESSAGE}" />
+
+    <!-- Formation Settings -->
+    <string id="ibs_formation_settings" text="阵型设置" />
+    <string id="ibs_gate_attack_formation" text="集中攻门阵型" />
+    <string id="ibs_gate_attack_formation_hint" text="选择集中攻门时使用的阵型   默认：线阵 。Line：线阵  ShieldWall：盾墙  Square：方阵  Loose：松散阵型" />
   </strings>
 </base> 

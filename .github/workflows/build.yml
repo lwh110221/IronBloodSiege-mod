@@ -38,7 +38,6 @@ jobs:
       run: |
         mkdir -p IronBloodSiege\bin\Win64_Shipping_Client
         copy "bin\Release\IronBloodSiege.dll" "IronBloodSiege\bin\Win64_Shipping_Client\"
-        copy "bin\Release\IronBloodSiege.pdb" "IronBloodSiege\bin\Win64_Shipping_Client\"
         copy "SubModule.xml" "IronBloodSiege\"
         xcopy /E /I "ModuleData" "IronBloodSiege\ModuleData"
         Compress-Archive -Path IronBloodSiege -DestinationPath IronBloodSiege.zip -Force
@@ -47,7 +46,6 @@ jobs:
       run: |
         mkdir -p IronBloodSiege_Debug\bin\Win64_Shipping_Client
         copy "bin\Debug\IronBloodSiege.dll" "IronBloodSiege_Debug\bin\Win64_Shipping_Client\"
-        copy "bin\Debug\IronBloodSiege.pdb" "IronBloodSiege_Debug\bin\Win64_Shipping_Client\"
         copy "SubModule.xml" "IronBloodSiege_Debug\"
         xcopy /E /I "ModuleData" "IronBloodSiege_Debug\ModuleData"
         Compress-Archive -Path IronBloodSiege_Debug -DestinationPath IronBloodSiege_Debug.zip -Force

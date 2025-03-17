@@ -71,7 +71,6 @@ namespace IronBloodSiege.Patche
                     formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.5f);
                     formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.3f);
                     formation.AI.SetBehaviorWeight<BehaviorAttackGates>(2.0f);
-                    IbsMessage.ShowRamDestroyed();
                     IbsMessage.ShowAttackGate();
                 }
             }

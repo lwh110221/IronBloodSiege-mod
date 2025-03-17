@@ -4,60 +4,30 @@
     <tag language="English" />
   </tags>
   <strings>
-    <!-- Mod 信息 -->
-    <string id="ibs_mod_loaded" text="IronBlood Siege - Loaded Successfully! Author: Ahao"/>
-    <string id="ibs_mod_email" text="email: ahao221x@gmail.com"/>
-    <string id="ibs_mod_name" text="IronBlood Siege"/>
-    <string id="ibs_mod_enabled" text="IronBlood Siege is enabled"/>
-    <string id="ibs_mod_disabled" text="IronBlood Siege is disabled"/>
-    <!-- 设置 -->
     <string id="ibs_settings_basic" text="Basic Settings"/>
     <string id="ibs_enable_mod" text="Enable Mod"/>
     <string id="ibs_enable_mod_hint" text="Whether to enable IronBlood Siege - Note: Do not enable or disable during battle, adjust before entering the scene"/>
     <string id="ibs_enable_when_player_attacker" text="Enable When Player is Attacker"/>
     <string id="ibs_enable_when_player_attacker_hint" text="Whether to enable iron will effect when player is on the attacking side"/>
 
-    <!-- 援军设置 -->
-    <string id="ibs_reinforcement_settings" text="Reinforcement Settings"/>
-    <string id="ibs_aggressive_reinforcement" text="Enable Aggressive Reinforcement" />
-    <string id="ibs_aggressive_reinforcement_hint" text="Faster reinforcement arrival - Compatible with RBM AI's Spawning modifications (RBM tested only)" />
-    
-    <!-- 撤退设置 -->
-    <string id="ibs_retreat_conditions" text="Iron Will Disable Conditions (Note: Choose only one of the two methods!)"/>
-    <string id="ibs_fixed_retreat" text="Fixed Number Iron Will Disable"/>
-    <string id="ibs_fixed_retreat_hint" text="Disable iron will when attacker troops fall below specified number"/>
-    <string id="ibs_retreat_threshold" text="Fixed Number Threshold"/>
-    <string id="ibs_retreat_threshold_hint" text="Disable iron will when attacker troops fall below this number"/>
-    <string id="ibs_ratio_retreat" text="Auto Ratio Iron Will Disable"/>
-    <string id="ibs_ratio_retreat_hint" text="Disable iron will when attacker troops fall below specified ratio of defenders"/>
-    <string id="ibs_ratio_threshold" text="Ratio Threshold"/>
-    <string id="ibs_ratio_threshold_hint" text="Disable iron will when attacker/defender ratio falls below this value. Default: 0.7"/>
-    
-    <!-- 战斗设置 -->
-    <string id="ibs_combat_settings" text="Combat Settings"/>
-    <string id="ibs_morale_threshold" text="Siege Troop Morale Threshold"/>
-    <string id="ibs_morale_threshold_hint" text="Morale will be boosted when troops fall below this value. Default: 70"/>
-    <string id="ibs_morale_boost_rate" text="Morale Boost Rate"/>
-    <string id="ibs_morale_boost_rate_hint" text="Amount of morale boost per update. Default: 15"/>
-    <string id="ibs_disable_delay" text="Iron Will Waiting Time for Reinforcements"/>
-    <string id="ibs_disable_delay_hint" text="The delay time from triggering the loss of Iron Will state to actually disabling the Iron Will effect. If no reinforcements arrive during this time, siege troops will completely lose their Iron Will state (seconds). Default: 60"/>
-    
-    <!-- 消息 -->
-    <string id="ibs_prevent_retreat" text="IronBlood Siege: Prevented troops from retreating!"/>
-    <string id="ibs_morale_boost" text="IronBlood Siege: {COUNT} troops were inspired"/>
-    <string id="ibs_retreat_message" text="Iron Blood Siege: Insufficient number of siege troops, Iron Blood attack will be abandoned soon" />
-    <string id="ibs_reinforcement_message" text="IronBlood Siege: Reinforcements have arrived, iron will attack resumed!"/>
-    
-    <!-- 错误消息 -->
-    <string id="ibs_error_display" text="IronBlood Siege display error: {MESSAGE}"/>
-    <string id="ibs_error_behavior" text="IronBlood Siege behavior error: {MESSAGE}"/>
-    <string id="ibs_error_init" text="IronBlood Siege initialization error: {MESSAGE}"/>
-    <string id="ibs_error_general" text="IronBlood Siege error: {MESSAGE}"/>
-    <string id="ibs_error_cleanup" text="IronBlood Siege cleanup error: {MESSAGE}"/>
+    <string id="ibs_retreat_dead" text="Casualties as a percentage of total troops" />
+    <string id="ibs_retreat_dead_hint" text="When the number of casualties reaches this ratio of the total number of troops, the Buff effect disappears.. Default: 70" />
+    <string id="ibs_retreat_settings" text="Buff Settings" />
 
-    <!-- 阵型设置 -->
+    <string id="ibs_msg_gate_destroyed" text="The gates have been Destroyed" />
+    <string id="ibs_msg_ram_destroyed" text="Ram Destroyed" />
+    <string id="ibs_msg_attack_gate" text="The siege forces are assembling to attack the gates." />
+    <string id="ibs_enable_mod" text="The attacking soldiers have suffered too many casualties and are about to be routed." />
+
     <string id="ibs_formation_settings" text="Formation Settings"/>
     <string id="ibs_gate_attack_formation" text="Gate Attack Formation"/>
     <string id="ibs_gate_attack_formation_hint" text="Choose the formation type when troops attack gates Default ： Line"/>
+   
+      <string id="ibs_spawn_basic" text="Strength adjustment" />
+    <string id="ibs_enable_spawn_balance" text="Enable strength adjustment" />
+    <string id="ibs_enable_spawn_balance_hint" text="Whether to enable Adjusts the in-battlefield force ratio between the attacking and defending sides in a siege" /> 
+
+    <string id="ibs_attacker_ratio" text="Attacker Troops Ratio" />
+    <string id="ibs_attacker_ratio_hint" text="Percentage of the attacking side's initial force to the total force in a siege battle. Default value: 65" /> 
   </strings>
 </base>

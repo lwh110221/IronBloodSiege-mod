@@ -26,8 +26,8 @@
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <Optimize>false</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -86,22 +86,15 @@
       <HintPath>lib\MCMv5.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="SandBox">
+      <HintPath>lib\SandBox.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   
   <ItemGroup>
     <Compile Include="src\SubModule.cs" />
-    <Compile Include="src\Behavior\MainBehavior.cs" />
-    <Compile Include="src\Behavior\SiegeFormationBehavior.cs" />
-    <Compile Include="src\Behavior\SiegeReinforcementBehavior.cs" />
-    <Compile Include="src\Behavior\SiegeMoraleManagerBehavior.cs" />
-    <Compile Include="src\Behavior\IModBehavior.cs" />
-    <Compile Include="src\Logic\SiegeAIBehavior.cs" />
-    <Compile Include="src\Behavior\BehaviorAttackGates.cs" />
-    <Compile Include="src\Util\BehaviorCleanupHelper.cs" />
-    <Compile Include="src\Setting\Settings.cs" />
-    <Compile Include="src\Util\SafetyChecks.cs" />
-    <Compile Include="src\Util\Constants.cs" />
-    <Compile Include="src\Util\Logger.cs" />
+    <Compile Include="src\*\*.cs" />
   </ItemGroup>
   
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

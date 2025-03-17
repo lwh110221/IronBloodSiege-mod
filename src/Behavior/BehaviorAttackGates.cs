@@ -1,79 +1,48 @@
 using System.Collections.Generic;
-using System.Linq;
-using TaleWorlds.Core;
-using TaleWorlds.Engine;
-using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.Localization;
 using IronBloodSiege.Setting;
+using IronBloodSiege.Util;
 
 namespace IronBloodSiege.Behavior
 {
+    /// <summary>
+    /// 攻击城门行为 - 当攻城冲车被摧毁时，提供攻击城门的备选方案
+    /// </summary>
     public class BehaviorAttackGates : BehaviorComponent
     {
-        private readonly List<CastleGate> _targetGates;
+        private enum BehaviorState
+        {
+            Deciding,
+            AttackGate,
+            Charging
+        }
+
+        private BehaviorState _behaviorState;
+        private List<CastleGate> _targetGates;
         private CastleGate _currentTargetGate;
         private MovementOrder _attackOrder;
         private MovementOrder _chargeOrder;
+        private MovementOrder _stopOrder;
 
-        // public override float NavmeshlessTargetPositionPenalty => 0.5f;
+        public override float NavmeshlessTargetPositionPenalty => 1f;
 
         public BehaviorAttackGates(Formation formation) : base(formation)
         {
-            // 设置较低的凝聚度，让士兵更分散
-            base.BehaviorCoherence = 0.5f;
-
-            // 获取所有敌方城门
-            var teamAI = formation.Team.TeamAI as TeamAISiegeComponent;
-            if (teamAI != null)
-            {
-                _targetGates = new List<CastleGate>();
-                if (teamAI.OuterGate != null && !teamAI.OuterGate.IsDestroyed && teamAI.OuterGate.State == CastleGate.GateState.Closed)
-                {
-                    _targetGates.Add(teamAI.OuterGate);
-                }
-                if (teamAI.InnerGate != null && !teamAI.InnerGate.IsDestroyed && teamAI.InnerGate.State == CastleGate.GateState.Closed)
-                {
-                    _targetGates.Add(teamAI.InnerGate);
-                }
-            }
-
+            _behaviorState = BehaviorState.Deciding;
             _chargeOrder = MovementOrder.MovementOrderCharge;
-            base.CurrentOrder = _chargeOrder;
+            _stopOrder = MovementOrder.MovementOrderStop;
+            CurrentOrder = _stopOrder;
+            UpdateTargetGates();
         }
 
-        public override TextObject GetBehaviorString()
+        private void UpdateTargetGates()
         {
-            TextObject behaviorString = base.GetBehaviorString();
-            TextObject variable = GameTexts.FindText("str_formation_ai_side_strings", base.Formation.AI.Side.ToString());
-            behaviorString.SetTextVariable("SIDE_STRING", variable);
-            behaviorString.SetTextVariable("IS_GENERAL_SIDE", "0");
-            return behaviorString;
-        }
-
-        public override void OnValidBehaviorSideChanged()
-        {
-            base.OnValidBehaviorSideChanged();
-            
-            // 重新检查目标城门
-            var teamAI = base.Formation.Team.TeamAI as TeamAISiegeComponent;
-            if (teamAI != null)
-            {
-                _targetGates.Clear();
-                if (teamAI.OuterGate != null && !teamAI.OuterGate.IsDestroyed && teamAI.OuterGate.State == CastleGate.GateState.Closed)
-                {
-                    _targetGates.Add(teamAI.OuterGate);
-                }
-                if (teamAI.InnerGate != null && !teamAI.InnerGate.IsDestroyed && teamAI.InnerGate.State == CastleGate.GateState.Closed)
-                {
-                    _targetGates.Add(teamAI.InnerGate);
-                }
-            }
+            _targetGates = IbsBattleCheck.GetIntactGates(Mission.Current);
         }
 
         private ArrangementOrder GetFormationArrangementOrder()
         {
-            switch (Settings.Instance.GateAttackFormationType.SelectedValue)
+            switch (IbsSettings.Instance.GateAttackFormationType.SelectedValue)
             {
                 case GateAttackFormation.Line:
                     return ArrangementOrder.ArrangementOrderLine;
@@ -88,76 +57,116 @@ namespace IronBloodSiege.Behavior
             }
         }
 
+        private BehaviorState CheckAndChangeState()
+        {
+            UpdateTargetGates();
+
+            switch (_behaviorState)
+            {
+                case BehaviorState.Deciding:
+                    if (_targetGates.Count == 0)
+                    {
+                        return BehaviorState.Charging;
+                    }
+                    return BehaviorState.AttackGate;
+
+                case BehaviorState.AttackGate:
+                    if (_targetGates.Count == 0)
+                    {
+                        return BehaviorState.Charging;
+                    }
+
+                    if (_currentTargetGate == null || _currentTargetGate.IsDestroyed || _currentTargetGate.State == CastleGate.GateState.Open)
+                    {
+                        return BehaviorState.Deciding;
+                    }
+
+                    return BehaviorState.AttackGate;
+
+                case BehaviorState.Charging:
+                    if (_targetGates.Count > 0)
+                    {
+                        return BehaviorState.Deciding;
+                    }
+                    return BehaviorState.Charging;
+
+                default:
+                    return BehaviorState.Deciding;
+            }
+        }
+
+        protected override void CalculateCurrentOrder()
+        {
+            switch (_behaviorState)
+            {
+                case BehaviorState.Deciding:
+                    CurrentOrder = _stopOrder;
+                    break;
+
+                case BehaviorState.AttackGate:
+                    if (_targetGates.Count > 0)
+                    {
+                        _currentTargetGate = IbsBattleCheck.GetNearestGate(Formation.QuerySystem.AveragePosition, Mission.Current);
+
+                        if (_currentTargetGate != null)
+                        {
+                            _attackOrder = MovementOrder.MovementOrderAttackEntity(_currentTargetGate.GameEntity, false);
+                            CurrentOrder = _attackOrder;
+                        }
+                        else
+                        {
+                            CurrentOrder = _chargeOrder;
+                        }
+                    }
+                    else
+                    {
+                        CurrentOrder = _chargeOrder;
+                    }
+                    break;
+
+                case BehaviorState.Charging:
+                    CurrentOrder = _chargeOrder;
+                    break;
+            }
+        }
+
         public override void TickOccasionally()
         {
-            base.TickOccasionally();
-
-            // 移除已被摧毁或打开的城门
-            _targetGates?.RemoveAll(g => g == null || g.IsDestroyed || g.State == CastleGate.GateState.Open);
-
-            if (base.Formation.AI.ActiveBehavior != this)
+            BehaviorState newState = CheckAndChangeState();
+            if (newState != _behaviorState)
             {
-                return;
+                _behaviorState = newState;
+                CalculateCurrentOrder();
             }
 
-            if (_targetGates == null || _targetGates.Count == 0)
+            Formation.SetMovementOrder(CurrentOrder);
+
+            if (_behaviorState == BehaviorState.AttackGate && _currentTargetGate != null)
             {
-                if (base.CurrentOrder != _chargeOrder)
-                {
-                    base.CurrentOrder = _chargeOrder;
-                }
-            }
-            else
-            {
-                // 选择最近的城门作为目标
-                CastleGate nearestGate = _targetGates.MinBy(g => 
-                    base.Formation.QuerySystem.AveragePosition.DistanceSquared(g.GameEntity.GlobalPosition.AsVec2));
-
-                if (_currentTargetGate != nearestGate)
-                {
-                    _currentTargetGate = nearestGate;
-                    // 设置为直接攻击实体，不需要包围
-                    _attackOrder = MovementOrder.MovementOrderAttackEntity(_currentTargetGate.GameEntity, false);
-                    base.CurrentOrder = _attackOrder;
-                }
-
-                // 如果部队距离城门很近但还没有攻击命令，强制设置攻击命令
-                float distanceToGate = base.Formation.QuerySystem.AveragePosition.Distance(_currentTargetGate.GameEntity.GlobalPosition.AsVec2);
-                if (distanceToGate < 15f && base.CurrentOrder.OrderEnum != MovementOrder.MovementOrderEnum.AttackEntity)
-                {
-                    base.CurrentOrder = _attackOrder;
-                }
-            }
-
-            base.Formation.SetMovementOrder(base.CurrentOrder);
-            
-            // 如果在攻击城门，确保Formation保持松散
-            if (_currentTargetGate != null)
-            {   
-                base.Formation.ArrangementOrder = GetFormationArrangementOrder();
-                base.Formation.FormOrder = FormOrder.FormOrderDeep;
-                
-                // 设置面向敌人的方向
-                Vec2 directionToGate = (_currentTargetGate.GameEntity.GlobalPosition.AsVec2 - base.Formation.QuerySystem.AveragePosition).Normalized();
-                base.Formation.FacingOrder = FacingOrder.FacingOrderLookAtDirection(directionToGate);
+                Formation.ArrangementOrder = GetFormationArrangementOrder();
+                Formation.FormOrder = FormOrder.FormOrderDeep;
+                Formation.FacingOrder = FacingOrder.FacingOrderLookAtEnemy;
             }
         }
 
         protected override void OnBehaviorActivatedAux()
         {
-            base.Formation.ArrangementOrder = GetFormationArrangementOrder();
-            base.Formation.FacingOrder = FacingOrder.FacingOrderLookAtEnemy;
-            base.Formation.FiringOrder = FiringOrder.FiringOrderFireAtWill;
-            base.Formation.FormOrder = FormOrder.FormOrderDeep;
+            Formation.ArrangementOrder = GetFormationArrangementOrder();
+            Formation.FormOrder = FormOrder.FormOrderDeep;
+            
+            CalculateCurrentOrder();
+            Formation.SetMovementOrder(CurrentOrder);
+            Formation.FacingOrder = FacingOrder.FacingOrderLookAtEnemy;
+            Formation.FiringOrder = FiringOrder.FiringOrderFireAtWill;
         }
 
         protected override float GetAiWeight()
         {
-            if (_targetGates != null && _targetGates.Count > 0)
-            {
-                return 1.0f;
-            }
-            return 0f;
+            if (!IbsSettings.Instance.IsEnabled) return 0f;
+            if (_targetGates == null || _targetGates.Count == 0) return 0f;
+
+            bool isRamDestroyed = IbsBattleCheck.IsCurrentBatteringRamDestroyed();
+            return isRamDestroyed ? 2.0f : 0f;
         }
     }
-} 
+}

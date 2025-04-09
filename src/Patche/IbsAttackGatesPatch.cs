@@ -1,3 +1,4 @@
+/*
 using System.Collections.Generic;
 using HarmonyLib;
 using TaleWorlds.MountAndBlade;
@@ -70,7 +71,7 @@ namespace IronBloodSiege.Patche
                     formation.AI.SetBehaviorWeight<BehaviorAssaultWalls>(0.5f);
                     formation.AI.SetBehaviorWeight<BehaviorWaitForLadders>(0.5f);
                     formation.AI.SetBehaviorWeight<BehaviorTacticalCharge>(0.3f);
-                    formation.AI.SetBehaviorWeight<BehaviorAttackGates>(2.0f);
+                    formation.AI.SetBehaviorWeight<BehaviorAttackGates>(1.0f);
                     IbsMessage.ShowAttackGate();
                 }
             }
@@ -107,7 +108,7 @@ namespace IronBloodSiege.Patche
                     var attackGatesBehavior = formation.AI.GetBehavior<BehaviorAttackGates>();
                     if (attackGatesBehavior != null)
                     {
-                        formation.AI.SetBehaviorWeight<BehaviorAttackGates>(2.0f);
+                        formation.AI.SetBehaviorWeight<BehaviorAttackGates>(1.0f);
                     }
                 }
             }
@@ -128,3 +129,4 @@ namespace IronBloodSiege.Patche
         }
     }
 }
+*/

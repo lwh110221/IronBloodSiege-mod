@@ -1,7 +1,10 @@
+/*
 using System.Collections.Generic;
 using TaleWorlds.MountAndBlade;
 using IronBloodSiege.Setting;
 using IronBloodSiege.Util;
+using TaleWorlds.Core;
+using TaleWorlds.Localization;
 
 namespace IronBloodSiege.Behavior
 {
@@ -55,6 +58,15 @@ namespace IronBloodSiege.Behavior
                 default:
                     return ArrangementOrder.ArrangementOrderShieldWall;
             }
+        }
+
+        public override TextObject GetBehaviorString()
+        {
+            TextObject behaviorString = base.GetBehaviorString();
+            TextObject variable = GameTexts.FindText("str_formation_ai_side_strings", base.Formation.AI.Side.ToString());
+            behaviorString.SetTextVariable("SIDE_STRING", variable);
+            behaviorString.SetTextVariable("IS_GENERAL_SIDE", "0");
+            return behaviorString;
         }
 
         private BehaviorState CheckAndChangeState()
@@ -166,7 +178,8 @@ namespace IronBloodSiege.Behavior
             if (_targetGates == null || _targetGates.Count == 0) return 0f;
 
             bool isRamDestroyed = IbsBattleCheck.IsCurrentBatteringRamDestroyed();
-            return isRamDestroyed ? 2.0f : 0f;
+            return isRamDestroyed ? 1.0f : 0f;
         }
     }
 }
+*/

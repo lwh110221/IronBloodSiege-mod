@@ -7,14 +7,6 @@ using System.Linq;
 
 namespace IronBloodSiege.Setting
 {
-    public enum GateAttackFormation
-    {
-        Line,
-        ShieldWall,
-        Square,
-        Loose
-    }
-
     public class IbsSettings : AttributeGlobalSettings<IbsSettings>
     {
         public override string Id => "IronBloodSiege_v1";
@@ -34,6 +26,16 @@ namespace IronBloodSiege.Setting
         [SettingPropertyGroup("{=ibs_settings_basic}Basic Settings", GroupOrder = 1)]
         public bool EnableWhenPlayerAttacker { get; set; } = true;
 
+        [SettingPropertyBool("{=ibs_enable_attack_gates}Enable Attack Gates", RequireRestart = false,
+            HintText = "{=ibs_enable_attack_gates_hint}When there is no battering ram or the battering ram is destroyed, middle lane formations will attack the gates", Order = 2)]
+        [SettingPropertyGroup("{=ibs_settings_basic}Basic Settings", GroupOrder = 1)]
+        public bool EnableAttackGates { get; set; } = true;
+
+        [SettingPropertyBool("{=ibs_enable_outer_gate_damage_enhance}Enable Outer Gate Damage Enhance", RequireRestart = false,
+            HintText = "{=ibs_enable_outer_gate_damage_enhance_hint}Damage multiplier for soldiers attacking outer gates with weapons", Order = 3)]
+        [SettingPropertyGroup("{=ibs_settings_basic}Basic Settings", GroupOrder = 1)]
+        public bool EnableOuterGateDamageEnhance { get; set; } = true;
+
         [SettingPropertyFloatingInteger("{=ibs_retreat_dead}Casualties as a percentage of total troops", 10f, 99f, "0.0", RequireRestart = false,
             HintText = "{=ibs_retreat_dead_hint}When the number of casualties reaches this ratio of the total number of troops, the Buff effect disappears.. Default: 70", Order = 1)]
         [SettingPropertyGroup("{=ibs_retreat_settings}Buff Settings", GroupOrder = 2)]
@@ -49,24 +51,21 @@ namespace IronBloodSiege.Setting
         [SettingPropertyGroup("{=ibs_spawn_basic}Strength adjustment", GroupOrder = 3)]
         public int AttackerTroopsRatio { get; set; } = 65;
 
-        [SettingPropertyGroup("{=ibs_formation_settings}Formation Settings", GroupOrder = 4)]
-        [SettingPropertyDropdown("{=ibs_gate_attack_formation}Gate Attack Formation", Order = 0, RequireRestart = false,
-            HintText = "{=ibs_gate_attack_formation_hint}Choose the formation type when troops attack gates Default ： Line")]
-        public Dropdown<GateAttackFormation> GateAttackFormationType { get; set; } = new Dropdown<GateAttackFormation>(
-            System.Enum.GetValues(typeof(GateAttackFormation)).Cast<GateAttackFormation>().ToArray(),
-            selectedIndex: 0);
+        [SettingPropertyFloatingInteger("{=ibs_gate_damage_multiplier}Outer Gate Damage Multiplier", 1.0f, 10.0f, "0.0", RequireRestart = false,
+            HintText = "{=ibs_gate_damage_multiplier_hint}Multiplier for damage dealt to outer gates. Default: 2.0", Order = 4)]
+        [SettingPropertyGroup("{=ibs_settings_basic}Basic Settings", GroupOrder = 1)]
+        public float GateDamageMultiplier { get; set; } = 2.0f;
 
         public IbsSettings()
         {
             IsEnabled = true;
             EnableWhenPlayerAttacker = true;
+            EnableAttackGates = true;
+            EnableOuterGateDamageEnhance = true;
             CanRetreatRatios = 70f;
             EnableSpawnBalance = true;
             AttackerTroopsRatio = 65;
-
-            GateAttackFormationType = new Dropdown<GateAttackFormation>(
-                System.Enum.GetValues(typeof(GateAttackFormation)).Cast<GateAttackFormation>().ToArray(),
-                selectedIndex: 0);
+            GateDamageMultiplier = 2.0f;
         }
     }
 } 

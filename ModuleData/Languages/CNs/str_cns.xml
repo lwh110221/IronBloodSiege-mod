@@ -12,6 +12,9 @@
     <string id="ibs_enable_when_player_attacker" text="玩家为进攻方时启用" />
     <string id="ibs_enable_when_player_attacker_hint" text="当玩家在进攻方时是否启用铁血攻城效果" />
 
+    <string id="ibs_enable_attack_gates" text="启用攻击城门" />
+    <string id="ibs_enable_attack_gates_hint" text="当没有攻城冲车或冲车被摧毁后，中路编队会使用武器攻击城门" />
+
     <string id="ibs_retreat_dead" text="伤亡占部队总数比例" />
     <string id="ibs_retreat_dead_hint" text="当攻城方伤亡总数达到占部队总数的这个比例时，取消效果" />
     <string id="ibs_retreat_settings" text="撤退设定" />
@@ -20,9 +23,9 @@
     <string id="ibs_gate_attack_formation" text="集中攻门阵型" />
     <string id="ibs_gate_attack_formation_hint" text="选择集中攻门时使用的阵型   默认：线阵 。Line：线阵  ShieldWall：盾墙  Square：方阵  Loose：松散阵型" />
     <string id="ibs_msg_gate_destroyed" text="城门已被攻破" />
-    <string id="ibs_msg_ram_destroyed" text="攻城冲车被摧毁" />
+    <string id="ibs_msg_ram_destroyed" text="攻城冲车被摧毁，部队将攻击城门" />
     <string id="ibs_msg_attack_gate" text="攻城部队正在集结攻击城门" />
-    <string id="ibs_enable_mod" text="攻城士兵伤亡过大，即将溃败" />
+    <string id="ibs_msg_can_retreat" text="攻城士兵伤亡过大，即将溃败" />
     <string id="ibs_msg_breach_middle" text="城门已突破！部队将大举进攻城门" /> 
 
     <string id="ibs_enable_spawn_balance" text="启用战场兵力调整" />
@@ -30,5 +33,10 @@
     <string id="ibs_spawn_basic" text="战场兵力调整" />
     <string id="ibs_attacker_ratio" text="攻城方兵力占比" />
     <string id="ibs_attacker_ratio_hint" text="在攻城战中，进攻方的初始兵力占总兵力的百分比。默认值：65" /> 
+
+    <string id="ibs_enable_outer_gate_damage_enhance" text="启用外城门伤害增强" />
+    <string id="ibs_enable_outer_gate_damage_enhance_hint" text="增加士兵使用武器对外城门造成的伤害" />
+    <string id="ibs_gate_damage_multiplier" text="外城门伤害倍数" />
+    <string id="ibs_gate_damage_multiplier_hint" text="士兵使用武器对外城门造成的伤害倍数。默认值：2.0" />
   </strings>
 </base> 

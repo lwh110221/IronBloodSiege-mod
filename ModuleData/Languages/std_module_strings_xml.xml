@@ -10,20 +10,28 @@
     <string id="ibs_enable_when_player_attacker" text="Enable When Player is Attacker"/>
     <string id="ibs_enable_when_player_attacker_hint" text="Whether to enable iron will effect when player is on the attacking side"/>
 
+    <string id="ibs_enable_attack_gates" text="Enable Attack Gates"/>
+    <string id="ibs_enable_attack_gates_hint" text="When there is no battering ram or the battering ram is destroyed, middle lane formations will attack the gates"/>
+
+    <string id="ibs_enable_outer_gate_damage_enhance" text="Enable Outer Gate Damage Enhance"/>
+    <string id="ibs_enable_outer_gate_damage_enhance_hint" text="Damage multiplier for soldiers attacking outer gates with weapons"/>
+    <string id="ibs_gate_damage_multiplier" text="Outer Gate Damage Multiplier"/>
+    <string id="ibs_gate_damage_multiplier_hint" text="Multiplier for damage dealt to outer gates. Default: 2.0"/>
+
     <string id="ibs_retreat_dead" text="Casualties as a percentage of total troops" />
     <string id="ibs_retreat_dead_hint" text="When the number of casualties reaches this ratio of the total number of troops, the Buff effect disappears.. Default: 70" />
     <string id="ibs_retreat_settings" text="Buff Settings" />
 
     <string id="ibs_msg_gate_destroyed" text="The gates have been Destroyed" />
-    <string id="ibs_msg_ram_destroyed" text="Ram Destroyed" />
+    <string id="ibs_msg_ram_destroyed" text="Ram Destroyed, troops will attack the gates" />
     <string id="ibs_msg_attack_gate" text="The siege forces are assembling to attack the gates." />
-    <string id="ibs_enable_mod" text="The attacking soldiers have suffered too many casualties and are about to be routed." />
+    <string id="ibs_msg_can_retreat" text="The attacking soldiers have suffered too many casualties and are about to be routed." />
 
     <string id="ibs_formation_settings" text="Formation Settings"/>
     <string id="ibs_gate_attack_formation" text="Gate Attack Formation"/>
     <string id="ibs_gate_attack_formation_hint" text="Choose the formation type when troops attack gates Default ： Line"/>
    
-      <string id="ibs_spawn_basic" text="Strength adjustment" />
+    <string id="ibs_spawn_basic" text="Strength adjustment" />
     <string id="ibs_enable_spawn_balance" text="Enable strength adjustment" />
     <string id="ibs_enable_spawn_balance_hint" text="Whether to enable Adjusts the in-battlefield force ratio between the attacking and defending sides in a siege" /> 
 

@@ -3,7 +3,6 @@ using HarmonyLib;
 using TaleWorlds.MountAndBlade;
 using IronBloodSiege.Util;
 using IronBloodSiege.Setting;
-using IronBloodSiege.Message;
 
 namespace IronBloodSiege.Patche
 {
@@ -35,7 +34,6 @@ namespace IronBloodSiege.Patche
 
             if (casualtyPercentage >= DEFAULT_RETREAT_PERCENTAGE)
             {
-                IbsMessage.ShowCanRettreat();
                 return true;
             }
 

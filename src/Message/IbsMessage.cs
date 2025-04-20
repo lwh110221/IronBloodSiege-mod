@@ -26,7 +26,6 @@ namespace IronBloodSiege.Message
 
         public static void ShowBreachMiddle() => 
             ShowMessage(BreachMiddleText, Colors.Green);
-
         public static void ShowMessage(string message, Color color) => 
             InformationManager.DisplayMessage(new InformationMessage(message, color));
 

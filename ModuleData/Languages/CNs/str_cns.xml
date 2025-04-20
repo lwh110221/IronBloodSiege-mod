@@ -18,6 +18,8 @@
     <string id="ibs_retreat_dead" text="伤亡占部队总数比例" />
     <string id="ibs_retreat_dead_hint" text="当攻城方伤亡总数达到占部队总数的这个比例时，取消效果" />
     <string id="ibs_retreat_settings" text="撤退设定" />
+    <string id="ibs_show_casualty_message" text="显示伤亡消息" />
+    <string id="ibs_show_casualty_message_hint" text="是否在战斗中显示攻城方剩余兵力和伤亡率的消息" />
 
     <string id="ibs_formation_settings" text="阵型设置" />
     <string id="ibs_gate_attack_formation" text="集中攻门阵型" />
@@ -27,6 +29,7 @@
     <string id="ibs_msg_attack_gate" text="攻城部队正在集结攻击城门" />
     <string id="ibs_msg_can_retreat" text="攻城士兵伤亡过大，即将溃败" />
     <string id="ibs_msg_breach_middle" text="城门已突破！部队将大举进攻城门" /> 
+    <string id="ibs_msg_attacker_force" text="攻方剩余兵力: {REMAINING} (伤亡率: {RATE}%)" />
 
     <string id="ibs_enable_spawn_balance" text="启用战场兵力调整" />
     <string id="ibs_enable_spawn_balance_hint" text="调整攻城战中进攻方和防守方的战场内兵力比例" /> 

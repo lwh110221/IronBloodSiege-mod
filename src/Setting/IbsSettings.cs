@@ -41,6 +41,11 @@ namespace IronBloodSiege.Setting
         [SettingPropertyGroup("{=ibs_retreat_settings}Buff Settings", GroupOrder = 2)]
         public float CanRetreatRatios { get; set; } = 70f;
 
+        [SettingPropertyBool("{=ibs_show_casualty_message}Show Casualty Message", RequireRestart = false,
+            HintText = "{=ibs_show_casualty_message_hint}Whether to display messages showing attacker force remaining and casualty rate", Order = 2)]
+        [SettingPropertyGroup("{=ibs_retreat_settings}Buff Settings", GroupOrder = 2)]
+        public bool ShowCasualtyMessage { get; set; } = true;
+
         [SettingPropertyBool("{=ibs_enable_spawn_balance}Enable strength adjustment", RequireRestart = false,
             HintText = "{=ibs_enable_spawn_balance_hint}Whether to enable Adjusts the in-battlefield force ratio between the attacking and defending sides in a siege", Order = 1)]
         [SettingPropertyGroup("{=ibs_spawn_basic}Strength adjustment", GroupOrder = 3)]
@@ -63,6 +68,7 @@ namespace IronBloodSiege.Setting
             EnableAttackGates = true;
             EnableOuterGateDamageEnhance = true;
             CanRetreatRatios = 70f;
+            ShowCasualtyMessage = true;
             EnableSpawnBalance = true;
             AttackerTroopsRatio = 65;
             GateDamageMultiplier = 2.0f;

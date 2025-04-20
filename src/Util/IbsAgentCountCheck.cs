@@ -1,6 +1,5 @@
 using TaleWorlds.MountAndBlade;
 using System.Linq;
-using IronBloodSiege.Setting;
 using TaleWorlds.Core;
 
 namespace IronBloodSiege.Util
@@ -107,6 +106,9 @@ namespace IronBloodSiege.Util
             {
                 _cachedAttackerCount = mission.AttackerTeam.ActiveAgents.Count(a => a.IsHuman && !a.IsMount);
                 _cachedDefenderCount = mission.DefenderTeam.ActiveAgents.Count(a => a.IsHuman && !a.IsMount);
+                
+                // 显示攻城方剩余兵力信息
+                // ShowAttackerForceMessage(mission);
             }
             else
             {

@@ -21,11 +21,15 @@
     <string id="ibs_retreat_dead" text="Casualties as a percentage of total troops" />
     <string id="ibs_retreat_dead_hint" text="When the number of casualties reaches this ratio of the total number of troops, the Buff effect disappears.. Default: 70" />
     <string id="ibs_retreat_settings" text="Buff Settings" />
+    <string id="ibs_show_casualty_message" text="Show Casualty Message" />
+    <string id="ibs_show_casualty_message_hint" text="Whether to display messages showing attacker force remaining and casualty rate" />
 
     <string id="ibs_msg_gate_destroyed" text="The gates have been Destroyed" />
     <string id="ibs_msg_ram_destroyed" text="Ram Destroyed, troops will attack the gates" />
     <string id="ibs_msg_attack_gate" text="The siege forces are assembling to attack the gates." />
     <string id="ibs_msg_can_retreat" text="The attacking soldiers have suffered too many casualties and are about to be routed." />
+    <string id="ibs_msg_breach_middle" text="The middle lane has been breached! Troops are moving to attack through the gates." />
+    <string id="ibs_msg_attacker_force" text="Attacker Force Remaining: {REMAINING} (Casualty Rate: {RATE}%)" />
 
     <string id="ibs_formation_settings" text="Formation Settings"/>
     <string id="ibs_gate_attack_formation" text="Gate Attack Formation"/>
